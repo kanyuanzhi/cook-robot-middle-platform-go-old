@@ -21,6 +21,6 @@ func (g *GRPCClient) Run() {
 		logger.Log.Println(err)
 		return
 	}
-	defer conn.Close()
+	//defer conn.Close()
 	g.Client = pb.NewCommandServiceClient(conn)
 }

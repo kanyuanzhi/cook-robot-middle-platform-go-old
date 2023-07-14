@@ -10,12 +10,16 @@ const (
 	INGREDIENT       = InstructionType("ingredient")
 	SEASONING        = InstructionType("seasoning")
 	WATER            = InstructionType("water")
+	OIL              = InstructionType("oil")
 	STIR_FRY         = InstructionType("stir_fry")
 	HEAT             = InstructionType("heat")
 	DISH_OUT         = InstructionType("dish_out")
 	SHAKE            = InstructionType("shake")
 	LAMPBLACK_PURIFY = InstructionType("lampblack_purify")
 	DOOR_UNLOCK      = InstructionType("door_unlock")
+	RESET_ALL        = InstructionType("reset_all")
+	RESET_XY         = InstructionType("reset_xy")
+	RESET_RT         = InstructionType("reset_rt")
 
 	AXIS   = InstructionType("axis")
 	ROTATE = InstructionType("rotate")
@@ -23,7 +27,7 @@ const (
 )
 
 type Instruction struct {
-	InstructionType InstructionType `json:"instruction_type" mapstructure:"instruction_type"`
+	InstructionType InstructionType `json:"instructionType" mapstructure:"type"`
 }
 
 func (i Instruction) CheckType() InstructionType {
@@ -36,10 +40,10 @@ func NewInstruction(instructionType InstructionType) Instruction {
 
 type IngredientInstruction struct {
 	Instruction `mapstructure:",squash"`
-	SlotNumber  uint32 `json:"slot_number" mapstructure:"slot_number"`
+	SlotNumber  string `json:"slotNumber" mapstructure:"slotNumber"`
 }
 
-func NewIngredientInstruction(slotNumber uint32) *IngredientInstruction {
+func NewIngredientInstruction(slotNumber string) *IngredientInstruction {
 	return &IngredientInstruction{
 		Instruction: NewInstruction(INGREDIENT),
 		SlotNumber:  slotNumber,
@@ -48,10 +52,10 @@ func NewIngredientInstruction(slotNumber uint32) *IngredientInstruction {
 
 type SeasoningInstruction struct {
 	Instruction     `mapstructure:",squash"`
-	PumpToWeightMap map[uint32]uint32 `json:"pump_to_weight_map" mapstructure:"pump_to_weight_map"` // 泵号:重量
+	PumpToWeightMap map[string]uint32 `json:"pumpToWeightMap" mapstructure:"pumpToWeightMap"` // 泵号:重量
 }
 
-func NewSeasoningInstruction(pumpToWeightMap map[uint32]uint32) *SeasoningInstruction {
+func NewSeasoningInstruction(pumpToWeightMap map[string]uint32) *SeasoningInstruction {
 	return &SeasoningInstruction{
 		Instruction:     NewInstruction(SEASONING),
 		PumpToWeightMap: pumpToWeightMap,
@@ -60,13 +64,27 @@ func NewSeasoningInstruction(pumpToWeightMap map[uint32]uint32) *SeasoningInstru
 
 type WaterInstruction struct {
 	Instruction `mapstructure:",squash"`
-	PumpNumber  uint32 `json:"pump_number" mapstructure:"pump_number"`
+	PumpNumber  uint32 `json:"pumpNumber" mapstructure:"pumpNumber"`
 	Weight      uint32 `json:"weight"`
 }
 
 func NewWaterInstruction(pumpNumber uint32, weight uint32) *WaterInstruction {
 	return &WaterInstruction{
 		Instruction: NewInstruction(WATER),
+		PumpNumber:  pumpNumber,
+		Weight:      weight,
+	}
+}
+
+type OilInstruction struct {
+	Instruction `mapstructure:",squash"`
+	PumpNumber  uint32 `json:"pumpNumber" mapstructure:"pumpNumber"`
+	Weight      uint32 `json:"weight"`
+}
+
+func NewOilInstruction(pumpNumber uint32, weight uint32) *OilInstruction {
+	return &OilInstruction{
+		Instruction: NewInstruction(OIL),
 		PumpNumber:  pumpNumber,
 		Weight:      weight,
 	}
@@ -86,16 +104,16 @@ func NewStirFryInstruction(gear uint32, duration uint32) *StirFryInstruction {
 	}
 }
 
-type HeatingInstruction struct {
+type HeatInstruction struct {
 	Instruction       `mapstructure:",squash"`
 	Temperature       float64 `json:"temperature"`
-	TargetTemperature float64 `json:"target_temperature" mapstructure:"target_temperature"`
+	TargetTemperature float64 `json:"targetTemperature" mapstructure:"targetTemperature"`
 	Duration          uint32  `json:"duration"`
-	JudgeType         uint    `json:"judge_type" mapstructure:"judge_type"`
+	JudgeType         uint    `json:"judgeType" mapstructure:"judgeType"`
 }
 
-func NewHeatingInstruction(temperature float64, targetTemperature float64, duration uint32, judgeType uint) *HeatingInstruction {
-	return &HeatingInstruction{
+func NewHeatInstruction(temperature float64, targetTemperature float64, duration uint32, judgeType uint) *HeatInstruction {
+	return &HeatInstruction{
 		Instruction:       NewInstruction(HEAT),
 		Temperature:       temperature,
 		TargetTemperature: targetTemperature,
@@ -108,6 +126,7 @@ const (
 	BOTTOM_TEMPERATURE_JUDGE_TYPE uint = iota + 1
 	INFRARED_TEMPERATURE_JUDGE_TYPE
 	DURATION_JUDGE_TYPE
+	NO_JUDGE
 )
 
 type DishOutInstruction struct {
@@ -157,16 +176,50 @@ func NewDoorUnlockInstruction() *DoorUnlockInstruction {
 	}
 }
 
+type ResetAllInstruction struct {
+	Instruction `mapstructure:",squash"`
+}
+
+func NewResetAllInstruction() *ResetAllInstruction {
+	return &ResetAllInstruction{
+		Instruction: NewInstruction(RESET_ALL),
+	}
+}
+
+type ResetXYInstruction struct {
+	Instruction `mapstructure:",squash"`
+}
+
+func NewResetXYInstruction() *ResetXYInstruction {
+	return &ResetXYInstruction{
+		Instruction: NewInstruction(RESET_XY),
+	}
+}
+
+type ResetRTInstruction struct {
+	Instruction `mapstructure:",squash"`
+}
+
+func NewResetRTInstruction() *ResetRTInstruction {
+	return &ResetRTInstruction{
+		Instruction: NewInstruction(RESET_RT),
+	}
+}
+
 var InstructionTypeToStruct = map[InstructionType]Instructioner{
 	INGREDIENT:       IngredientInstruction{},
 	SEASONING:        SeasoningInstruction{},
 	WATER:            WaterInstruction{},
+	OIL:              OilInstruction{},
 	STIR_FRY:         StirFryInstruction{},
-	HEAT:             HeatingInstruction{},
+	HEAT:             HeatInstruction{},
 	DISH_OUT:         DishOutInstruction{},
 	SHAKE:            ShakeInstruction{},
 	LAMPBLACK_PURIFY: LampblackPurifyInstruction{},
 	DOOR_UNLOCK:      DoorUnlockInstruction{},
+	RESET_ALL:        ResetAllInstruction{},
+	RESET_XY:         ResetXYInstruction{},
+	RESET_RT:         ResetRTInstruction{},
 
 	AXIS:   AxisInstruction{},
 	ROTATE: RotateInstruction{},
