@@ -8,15 +8,17 @@ type Dish struct {
 	UUID      string                   `json:"uuid" form:"uuid"`
 	Name      string                   `json:"name" form:"name"`
 	Steps     []map[string]interface{} `json:"steps" form:"steps"`
+	Cuisine   int32                    `json:"cuisine" form:"cuisine"`
 }
 
 type DBDish struct {
-	ID        uint      `gorm:"primaryKey"`
+	ID        uint32    `gorm:"primaryKey"`
 	CreatedAt int64     `gorm:"autoCreateTime"`
 	UpdatedAt int64     `gorm:"autoCreateTime"`
 	UUID      uuid.UUID `json:"uuid" form:"uuid"`
 	Name      string    `json:"name" form:"name"`
 	Steps     string    `json:"steps" form:"steps"`
+	Cuisine   int32     `json:"cuisine" form:"cuisine"`
 }
 
 func (DBDish) TableName() string {

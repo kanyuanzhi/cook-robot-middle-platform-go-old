@@ -23,6 +23,9 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CommandServiceClient interface {
 	Execute(ctx context.Context, in *CommandRequest, opts ...grpc.CallOption) (*CommandResponse, error)
+	FetchStatus(ctx context.Context, in *FetchRequest, opts ...grpc.CallOption) (*FetchResponse, error)
+	Pause(ctx context.Context, in *PauseAndResumeRequest, opts ...grpc.CallOption) (*PauseAndResumeResponse, error)
+	Resume(ctx context.Context, in *PauseAndResumeRequest, opts ...grpc.CallOption) (*PauseAndResumeResponse, error)
 }
 
 type commandServiceClient struct {
@@ -42,11 +45,41 @@ func (c *commandServiceClient) Execute(ctx context.Context, in *CommandRequest, 
 	return out, nil
 }
 
+func (c *commandServiceClient) FetchStatus(ctx context.Context, in *FetchRequest, opts ...grpc.CallOption) (*FetchResponse, error) {
+	out := new(FetchResponse)
+	err := c.cc.Invoke(ctx, "/commandRPC.CommandService/FetchStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *commandServiceClient) Pause(ctx context.Context, in *PauseAndResumeRequest, opts ...grpc.CallOption) (*PauseAndResumeResponse, error) {
+	out := new(PauseAndResumeResponse)
+	err := c.cc.Invoke(ctx, "/commandRPC.CommandService/Pause", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *commandServiceClient) Resume(ctx context.Context, in *PauseAndResumeRequest, opts ...grpc.CallOption) (*PauseAndResumeResponse, error) {
+	out := new(PauseAndResumeResponse)
+	err := c.cc.Invoke(ctx, "/commandRPC.CommandService/Resume", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CommandServiceServer is the server API for CommandService service.
 // All implementations must embed UnimplementedCommandServiceServer
 // for forward compatibility
 type CommandServiceServer interface {
 	Execute(context.Context, *CommandRequest) (*CommandResponse, error)
+	FetchStatus(context.Context, *FetchRequest) (*FetchResponse, error)
+	Pause(context.Context, *PauseAndResumeRequest) (*PauseAndResumeResponse, error)
+	Resume(context.Context, *PauseAndResumeRequest) (*PauseAndResumeResponse, error)
 	mustEmbedUnimplementedCommandServiceServer()
 }
 
@@ -56,6 +89,15 @@ type UnimplementedCommandServiceServer struct {
 
 func (UnimplementedCommandServiceServer) Execute(context.Context, *CommandRequest) (*CommandResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
+}
+func (UnimplementedCommandServiceServer) FetchStatus(context.Context, *FetchRequest) (*FetchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FetchStatus not implemented")
+}
+func (UnimplementedCommandServiceServer) Pause(context.Context, *PauseAndResumeRequest) (*PauseAndResumeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Pause not implemented")
+}
+func (UnimplementedCommandServiceServer) Resume(context.Context, *PauseAndResumeRequest) (*PauseAndResumeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Resume not implemented")
 }
 func (UnimplementedCommandServiceServer) mustEmbedUnimplementedCommandServiceServer() {}
 
@@ -88,6 +130,60 @@ func _CommandService_Execute_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CommandService_FetchStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FetchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommandServiceServer).FetchStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/commandRPC.CommandService/FetchStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommandServiceServer).FetchStatus(ctx, req.(*FetchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CommandService_Pause_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PauseAndResumeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommandServiceServer).Pause(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/commandRPC.CommandService/Pause",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommandServiceServer).Pause(ctx, req.(*PauseAndResumeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CommandService_Resume_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PauseAndResumeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommandServiceServer).Resume(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/commandRPC.CommandService/Resume",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommandServiceServer).Resume(ctx, req.(*PauseAndResumeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CommandService_ServiceDesc is the grpc.ServiceDesc for CommandService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +194,18 @@ var CommandService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Execute",
 			Handler:    _CommandService_Execute_Handler,
+		},
+		{
+			MethodName: "FetchStatus",
+			Handler:    _CommandService_FetchStatus_Handler,
+		},
+		{
+			MethodName: "Pause",
+			Handler:    _CommandService_Pause_Handler,
+		},
+		{
+			MethodName: "Resume",
+			Handler:    _CommandService_Resume_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

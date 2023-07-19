@@ -6,6 +6,9 @@ package commandRPC;
 
 service CommandService {
   rpc Execute(CommandRequest) returns (CommandResponse) {}
+  rpc FetchStatus(FetchRequest) returns (FetchResponse) {}
+  rpc Pause(PauseAndResumeRequest) returns (PauseAndResumeResponse) {}
+  rpc Resume(PauseAndResumeRequest) returns (PauseAndResumeResponse) {}
 }
 
 message CommandRequest {
@@ -13,6 +16,22 @@ message CommandRequest {
 }
 
 message CommandResponse {
+  int32 result = 1;
+}
+
+message FetchRequest {
+  bool empty = 1;
+}
+
+message FetchResponse {
+  string status_json = 1;
+}
+
+message PauseAndResumeRequest{
+  bool empty = 1;
+}
+
+message PauseAndResumeResponse {
   int32 result = 1;
 }
 
