@@ -11,11 +11,12 @@ import (
 )
 
 type ControllerStatus struct {
-	CurrentCommandName          string `json:"currentCommandName"`
-	IsPausing                   bool   `json:"isPausing"`
-	IsRunning                   bool   `json:"isRunning"`
-	IsCooking                   bool   `json:"isCooking"`
-	IsPausingWithMovingFinished bool   `json:"isPausingWithMovingFinished"`
+	CurrentCommandName              string `json:"currentCommandName"`
+	IsPausing                       bool   `json:"isPausing"`
+	IsRunning                       bool   `json:"isRunning"`
+	IsCooking                       bool   `json:"isCooking"`
+	IsPausingWithMovingFinished     bool   `json:"isPausingWithMovingFinished"`
+	IsPausingWithMovingBackFinished bool   `json:"isPausingWithMovingBackFinished"`
 }
 
 type GRPCClient struct {
