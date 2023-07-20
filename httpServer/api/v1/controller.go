@@ -90,12 +90,11 @@ func (c *Controller) Execute(ctx *gin.Context) {
 				Instructions: instructions,
 			}
 
-		} else if commandReq.CommandName == command.RESET {
+		} else if commandReq.CommandName == command.PREPARE {
 			var instructions []instruction.Instructioner
-			instructions = append(instructions, instruction.NewResetRTInstruction())
-			instructions = append(instructions, instruction.NewResetXYInstruction())
+			instructions = append(instructions, instruction.NewPrepareInstruction())
 			commandStruct = command.Command{
-				CommandName:  command.RESET,
+				CommandName:  command.PREPARE,
 				CommandType:  command.MULTIPLE,
 				Instructions: instructions,
 			}
@@ -129,7 +128,7 @@ func (c *Controller) Execute(ctx *gin.Context) {
 			}
 		} else if commandReq.CommandName == command.RESUME {
 			var instructions []instruction.Instructioner
-			instructions = append(instructions, instruction.NewRestartInstruction())
+			instructions = append(instructions, instruction.NewResumeInstruction())
 			commandStruct = command.Command{
 				CommandName:  command.RESUME,
 				CommandType:  command.SINGLE,
