@@ -6,7 +6,7 @@ const (
 	COOK         = "cook"         // multiple
 	WASH         = "wash"         // multiple
 	RESET        = "reset"        // multiple
-	UNLOCK       = "unlock"       // single
+	DOOR_UNLOCK  = "door_unlock"  // single
 	DISH_OUT     = "dish_out"     // multiple
 	RESUME       = "resume"       // single
 	PAUSE_TO_ADD = "pause_to_add" // single

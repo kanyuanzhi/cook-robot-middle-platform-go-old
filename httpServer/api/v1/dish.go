@@ -4,9 +4,11 @@ import (
 	"cook-robot-middle-platform-go/db"
 	"cook-robot-middle-platform-go/httpServer/model"
 	"cook-robot-middle-platform-go/logger"
+	"encoding/base64"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"os"
 )
 
 type Dish struct {
@@ -28,14 +30,44 @@ func (d *Dish) Create(ctx *gin.Context) {
 		model.NewFailResponse(ctx, err.Error())
 		return
 	}
+	imagePath := "./assets/test.png"
+	imageData, err := os.ReadFile(imagePath)
+	if err != nil {
+		logger.Log.Println("无法读取图片文件:", err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+
 	uid := uuid.New()
 	dbDish := model.DBDish{
 		UUID:    uid,
 		Name:    dish.Name,
 		Steps:   string(stepsStr),
 		Cuisine: dish.Cuisine,
+		Image:   imageData,
 	}
 	err = db.SQLiteDB.Create(&dbDish).Error
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	dbCustomDishes := []model.DBCustomDish{
+		{
+			UUID:     uuid.New(),
+			DishUUID: uid,
+			Steps:    string(stepsStr),
+		}, {
+			UUID:     uuid.New(),
+			DishUUID: uid,
+			Steps:    string(stepsStr),
+		}, {
+			UUID:     uuid.New(),
+			DishUUID: uid,
+			Steps:    string(stepsStr),
+		},
+	}
+	err = db.SQLiteDB.Create(&dbCustomDishes).Error
 	if err != nil {
 		logger.Log.Println(err)
 		model.NewFailResponse(ctx, err.Error())
@@ -70,10 +102,69 @@ func (d *Dish) Get(ctx *gin.Context) {
 	dish.UUID = dbDish.UUID.String()
 	dish.Steps = stepsJSON
 	dish.Cuisine = dbDish.Cuisine
+	dish.Image = base64.StdEncoding.EncodeToString(dbDish.Image)
 	dish.CreatedAt = dbDish.CreatedAt
 	dish.UpdatedAt = dbDish.UpdatedAt
 
 	model.NewSuccessResponse(ctx, dish)
+}
+
+func (d *Dish) Delete(ctx *gin.Context) {
+	var dish model.Dish
+	if err := ctx.BindQuery(&dish); err != nil {
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+
+	var dbDish model.DBDish
+	err := db.SQLiteDB.Where("uuid = ?", dish.UUID).Delete(&dbDish).Error
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	var dbCustomDish model.DBCustomDish
+
+	err = db.SQLiteDB.Where("dish_uuid = ?", dish.UUID).Delete(&dbCustomDish).Error
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+
+	model.NewSuccessResponse(ctx, dish)
+}
+
+func (d *Dish) Update(ctx *gin.Context) {
+	var dish model.Dish
+	if err := ctx.BindJSON(&dish); err != nil {
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	stepsStr, err := json.Marshal(dish.Steps)
+	if err != nil {
+		logger.Log.Println("转换数组为字符串失败:", err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	dbDish := model.DBDish{
+		Name:    dish.Name,
+		Steps:   string(stepsStr),
+		Cuisine: dish.Cuisine,
+	}
+	err = db.SQLiteDB.Model(&dbDish).Where("uuid = ?", dish.UUID).Updates(dbDish).Error
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	err = db.SQLiteDB.Model(&model.DBCustomDish{}).Where("dish_uuid = ?", dish.UUID).Update("steps", dbDish.Steps).Error
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	model.NewSuccessResponse(ctx, nil)
 }
 
 type DishQueryReq struct {
@@ -105,6 +196,7 @@ func (d *Dish) ListByCuisine(ctx *gin.Context) {
 			UpdatedAt: dbDish.UpdatedAt,
 			UUID:      dbDish.UUID.String(),
 			Name:      dbDish.Name,
+			Image:     base64.StdEncoding.EncodeToString(dbDish.Image),
 		})
 	}
 	model.NewSuccessResponse(ctx, map[string]interface{}{

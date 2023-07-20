@@ -111,11 +111,11 @@ func (c *Controller) Execute(ctx *gin.Context) {
 
 	} else {
 		// 单指令，立即执行
-		if commandReq.CommandName == command.UNLOCK {
+		if commandReq.CommandName == command.DOOR_UNLOCK {
 			var instructions []instruction.Instructioner
 			instructions = append(instructions, instruction.NewDoorUnlockInstruction())
 			commandStruct = command.Command{
-				CommandName:  command.UNLOCK,
+				CommandName:  command.DOOR_UNLOCK,
 				CommandType:  command.SINGLE,
 				Instructions: instructions,
 			}

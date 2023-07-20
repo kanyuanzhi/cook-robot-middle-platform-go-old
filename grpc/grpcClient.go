@@ -34,7 +34,7 @@ func (g *GRPCClient) Run() {
 	//defer conn.Close()
 	g.Client = pb.NewCommandServiceClient(conn)
 
-	ticker := time.NewTicker(250 * time.Millisecond)
+	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {
@@ -53,12 +53,14 @@ func (g *GRPCClient) FetchStatus() {
 	res, err := g.Client.FetchStatus(ctxGRPC, req)
 	if err != nil {
 		logger.Log.Printf("gRPC调用失败: %v", err)
+		return
 	}
 
 	var controllerStatus ControllerStatus
 	err = json.Unmarshal([]byte(res.GetStatusJson()), &controllerStatus)
 	if err != nil {
 		logger.Log.Printf("无法解析命令JSON：%v", err)
+		return
 	}
 	g.ControllerStatus = controllerStatus
 	//logger.Log.Println(controllerStatus)

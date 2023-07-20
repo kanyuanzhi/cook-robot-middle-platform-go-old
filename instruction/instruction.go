@@ -21,7 +21,7 @@ const (
 	RESET_XY         = InstructionType("reset_xy")
 	RESET_RT         = InstructionType("reset_rt")
 	DELAY            = InstructionType("delay")
-	RESTART          = InstructionType("restart")
+	RESUME           = InstructionType("resume")
 	PAUSE_TO_ADD     = InstructionType("pause_to_add")
 
 	AXIS   = InstructionType("axis")
@@ -221,13 +221,13 @@ func NewDelayInstruction(duration uint32) *DelayInstruction {
 	}
 }
 
-type RestartInstruction struct {
+type ResumeInstruction struct {
 	Instruction `mapstructure:",squash"`
 }
 
-func NewRestartInstruction() *RestartInstruction {
-	return &RestartInstruction{
-		Instruction: NewInstruction(RESTART),
+func NewRestartInstruction() *ResumeInstruction {
+	return &ResumeInstruction{
+		Instruction: NewInstruction(RESUME),
 	}
 }
 
@@ -256,7 +256,7 @@ var InstructionTypeToStruct = map[InstructionType]Instructioner{
 	RESET_XY:         ResetXYInstruction{},
 	RESET_RT:         ResetRTInstruction{},
 	DELAY:            DelayInstruction{},
-	RESTART:          RestartInstruction{},
+	RESUME:           ResumeInstruction{},
 	PAUSE_TO_ADD:     PauseToAddInstruction{},
 
 	AXIS:   AxisInstruction{},
