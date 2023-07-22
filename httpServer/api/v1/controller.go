@@ -40,9 +40,9 @@ func (c *Controller) Execute(ctx *gin.Context) {
 	}
 	logger.Log.Println(commandReq)
 	var commandStruct command.Command
-	if commandReq.CommandType == command.MULTIPLE {
+	if commandReq.CommandType == command.COMMAND_TYPE_MULTIPLE {
 		// 多指令
-		if commandReq.CommandName == command.COOK {
+		if commandReq.CommandName == command.COMMAND_NAME_COOK {
 			var dbDish model.DBDish
 			err := db.SQLiteDB.First(&dbDish, "uuid = ?", commandReq.CommandData).Error
 			if err != nil {
@@ -85,53 +85,53 @@ func (c *Controller) Execute(ctx *gin.Context) {
 			instructions = append(instructions, instruction.NewResetRTInstruction())
 
 			commandStruct = command.Command{
-				CommandName:  command.COOK,
-				CommandType:  command.MULTIPLE,
+				CommandName:  command.COMMAND_NAME_COOK,
+				CommandType:  command.COMMAND_TYPE_MULTIPLE,
 				Instructions: instructions,
 			}
 
-		} else if commandReq.CommandName == command.PREPARE {
+		} else if commandReq.CommandName == command.COMMAND_NAME_PREPARE {
 			var instructions []instruction.Instructioner
 			instructions = append(instructions, instruction.NewPrepareInstruction())
 			commandStruct = command.Command{
-				CommandName:  command.PREPARE,
-				CommandType:  command.MULTIPLE,
+				CommandName:  command.COMMAND_NAME_PREPARE,
+				CommandType:  command.COMMAND_TYPE_MULTIPLE,
 				Instructions: instructions,
 			}
-		} else if commandReq.CommandName == command.DISH_OUT {
+		} else if commandReq.CommandName == command.COMMAND_NAME_DISH_OUT {
 			var instructions []instruction.Instructioner
 			instructions = append(instructions, instruction.NewDishOutInstruction())
 			commandStruct = command.Command{
-				CommandName:  command.DISH_OUT,
-				CommandType:  command.MULTIPLE,
+				CommandName:  command.COMMAND_NAME_DISH_OUT,
+				CommandType:  command.COMMAND_TYPE_MULTIPLE,
 				Instructions: instructions,
 			}
 		}
 
 	} else {
 		// 单指令，立即执行
-		if commandReq.CommandName == command.DOOR_UNLOCK {
+		if commandReq.CommandName == command.COMMAND_NAME_DOOR_UNLOCK {
 			var instructions []instruction.Instructioner
 			instructions = append(instructions, instruction.NewDoorUnlockInstruction())
 			commandStruct = command.Command{
-				CommandName:  command.DOOR_UNLOCK,
-				CommandType:  command.SINGLE,
+				CommandName:  command.COMMAND_NAME_DOOR_UNLOCK,
+				CommandType:  command.COMMAND_TYPE_SINGLE,
 				Instructions: instructions,
 			}
-		} else if commandReq.CommandName == command.PAUSE_TO_ADD {
+		} else if commandReq.CommandName == command.COMMAND_NAME_PAUSE_TO_ADD {
 			var instructions []instruction.Instructioner
 			instructions = append(instructions, instruction.NewPauseToAddInstruction())
 			commandStruct = command.Command{
-				CommandName:  command.PAUSE_TO_ADD,
-				CommandType:  command.SINGLE,
+				CommandName:  command.COMMAND_NAME_PAUSE_TO_ADD,
+				CommandType:  command.COMMAND_TYPE_SINGLE,
 				Instructions: instructions,
 			}
-		} else if commandReq.CommandName == command.RESUME {
+		} else if commandReq.CommandName == command.COMMAND_NAME_RESUME {
 			var instructions []instruction.Instructioner
 			instructions = append(instructions, instruction.NewResumeInstruction())
 			commandStruct = command.Command{
-				CommandName:  command.RESUME,
-				CommandType:  command.SINGLE,
+				CommandName:  command.COMMAND_NAME_RESUME,
+				CommandType:  command.COMMAND_TYPE_SINGLE,
 				Instructions: instructions,
 			}
 		}

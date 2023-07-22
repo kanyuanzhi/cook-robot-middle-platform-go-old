@@ -20,6 +20,7 @@ type ControllerStatus struct {
 	IsStirFrying                    bool   `json:"isStirFrying"`
 	BottomTemperature               uint32 `json:"bottomTemperature"`
 	InfraredTemperature             uint32 `json:"infraredTemperature"`
+	CookingTime                     int64  `json:"cookingTime"`
 }
 
 type GRPCClient struct {
