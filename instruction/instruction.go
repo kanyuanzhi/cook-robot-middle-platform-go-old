@@ -2,6 +2,7 @@ package instruction
 
 type Instructioner interface {
 	CheckType() InstructionType
+	SetName(name string)
 }
 
 type InstructionType string
@@ -31,11 +32,16 @@ const (
 )
 
 type Instruction struct {
-	InstructionType InstructionType `json:"instructionType" mapstructure:"type"`
+	InstructionType InstructionType `json:"instructionType" mapstructure:"instructionType"`
+	InstructionName string          `json:"instructionName" mapstructure:"instructionName"`
 }
 
 func (i Instruction) CheckType() InstructionType {
 	return i.InstructionType
+}
+
+func (i Instruction) SetName(name string) {
+	i.InstructionName = name
 }
 
 func NewInstruction(instructionType InstructionType) Instruction {
@@ -59,9 +65,12 @@ type SeasoningInstruction struct {
 	PumpToWeightMap map[string]uint32 `json:"pumpToWeightMap" mapstructure:"pumpToWeightMap"` // 泵号:重量
 }
 
-func NewSeasoningInstruction(pumpToWeightMap map[string]uint32) *SeasoningInstruction {
+func NewSeasoningInstruction(name string, pumpToWeightMap map[string]uint32) *SeasoningInstruction {
 	return &SeasoningInstruction{
-		Instruction:     NewInstruction(SEASONING),
+		Instruction: Instruction{
+			InstructionType: SEASONING,
+			InstructionName: name,
+		},
 		PumpToWeightMap: pumpToWeightMap,
 	}
 }
@@ -204,9 +213,12 @@ type ResetRTInstruction struct {
 	Instruction `mapstructure:",squash"`
 }
 
-func NewResetRTInstruction() *ResetRTInstruction {
+func NewResetRTInstruction(name string) *ResetRTInstruction {
 	return &ResetRTInstruction{
-		Instruction: NewInstruction(RESET_RT),
+		Instruction: Instruction{
+			InstructionType: RESET_RT,
+			InstructionName: name,
+		},
 	}
 }
 
