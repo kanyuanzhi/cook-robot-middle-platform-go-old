@@ -60,7 +60,7 @@ func (c *Controller) Execute(ctx *gin.Context) {
 			var instructions []instruction.Instructioner
 
 			// 开始先启动转动
-			instructions = append(instructions, instruction.NewRotateInstruction("转动自启动", "start", 1, 350, 0))
+			instructions = append(instructions, instruction.NewRotateInstruction("转动自启动中", "start", 1, 350, 0))
 
 			for _, step := range stepsJSON {
 				instructionType := instruction.InstructionType(step["instructionType"].(string))
@@ -82,7 +82,7 @@ func (c *Controller) Execute(ctx *gin.Context) {
 				instructions = append(instructions, instructionStruct)
 			}
 
-			instructions = append(instructions, instruction.NewResetRTInstruction("停止"))
+			instructions = append(instructions, instruction.NewResetRTInstruction("停止中"))
 
 			commandStruct = command.Command{
 				CommandName:  command.COMMAND_NAME_COOK,
