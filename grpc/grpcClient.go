@@ -10,17 +10,26 @@ import (
 	"time"
 )
 
+type InstructionInfo struct {
+	Type         string `json:"type"`
+	Name         string `json:"name"`
+	Index        int    `json:"index"`
+	ActionNumber int    `json:"actionNumber"`
+}
+
 type ControllerStatus struct {
-	CurrentCommandName              string `json:"currentCommandName"`
-	IsPausing                       bool   `json:"isPausing"`
-	IsRunning                       bool   `json:"isRunning"`
-	IsCooking                       bool   `json:"isCooking"`
-	IsPausingWithMovingFinished     bool   `json:"isPausingWithMovingFinished"`
-	IsPausingWithMovingBackFinished bool   `json:"isPausingWithMovingBackFinished"`
-	IsStirFrying                    bool   `json:"isStirFrying"`
-	BottomTemperature               uint32 `json:"bottomTemperature"`
-	InfraredTemperature             uint32 `json:"infraredTemperature"`
-	CookingTime                     int64  `json:"cookingTime"`
+	CurrentCommandName              string           `json:"currentCommandName"`
+	CurrentDishUuid                 string           `json:"currentDishUuid"`
+	CurrentInstructionInfo          *InstructionInfo `json:"currentInstructionInfo"`
+	IsPausing                       bool             `json:"isPausing"`
+	IsRunning                       bool             `json:"isRunning"`
+	IsCooking                       bool             `json:"isCooking"`
+	IsPausingWithMovingFinished     bool             `json:"isPausingWithMovingFinished"`
+	IsPausingWithMovingBackFinished bool             `json:"isPausingWithMovingBackFinished"`
+	IsStirFrying                    bool             `json:"isStirFrying"`
+	BottomTemperature               uint32           `json:"bottomTemperature"`
+	InfraredTemperature             uint32           `json:"infraredTemperature"`
+	CookingTime                     int64            `json:"cookingTime"`
 }
 
 type GRPCClient struct {

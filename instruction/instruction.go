@@ -18,7 +18,6 @@ const (
 	SHAKE            = InstructionType("shake")
 	LAMPBLACK_PURIFY = InstructionType("lampblack_purify")
 	DOOR_UNLOCK      = InstructionType("door_unlock")
-	RESET_ALL        = InstructionType("reset_all")
 	RESET_XYT        = InstructionType("reset_xyt")
 	RESET_RT         = InstructionType("reset_rt")
 	PREPARE          = InstructionType("prepare")
@@ -36,12 +35,12 @@ type Instruction struct {
 	InstructionName string          `json:"instructionName" mapstructure:"instructionName"`
 }
 
-func (i Instruction) CheckType() InstructionType {
-	return i.InstructionType
+func (ins Instruction) CheckType() InstructionType {
+	return ins.InstructionType
 }
 
-func (i Instruction) SetName(name string) {
-	i.InstructionName = name
+func (ins Instruction) SetName(name string) {
+	ins.InstructionName = name
 }
 
 func NewInstruction(instructionType InstructionType) Instruction {
@@ -189,16 +188,6 @@ func NewDoorUnlockInstruction() *DoorUnlockInstruction {
 	}
 }
 
-type ResetAllInstruction struct {
-	Instruction `mapstructure:",squash"`
-}
-
-func NewResetAllInstruction() *ResetAllInstruction {
-	return &ResetAllInstruction{
-		Instruction: NewInstruction(RESET_ALL),
-	}
-}
-
 type ResetXYTInstruction struct {
 	Instruction `mapstructure:",squash"`
 }
@@ -275,7 +264,6 @@ var InstructionTypeToStruct = map[InstructionType]Instructioner{
 	SHAKE:            ShakeInstruction{},
 	LAMPBLACK_PURIFY: LampblackPurifyInstruction{},
 	DOOR_UNLOCK:      DoorUnlockInstruction{},
-	RESET_ALL:        ResetAllInstruction{},
 	RESET_XYT:        ResetXYTInstruction{},
 	RESET_RT:         ResetRTInstruction{},
 	PREPARE:          PrepareInstruction{},

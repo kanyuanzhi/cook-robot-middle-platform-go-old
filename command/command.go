@@ -20,5 +20,6 @@ const (
 type Command struct {
 	CommandType  string                      `json:"commandType"`
 	CommandName  string                      `json:"commandName"`
+	DishUuid     string                      `json:"dishUuid"` //如果是炒制命令，则会携带菜品的uuid
 	Instructions []instruction.Instructioner `json:"instructions"`
 }

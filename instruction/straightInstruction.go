@@ -35,9 +35,12 @@ type RotateInstruction struct {
 	RotationalAmount uint32   `json:"rotational_amount" mapstructure:"rotational_amount"`
 }
 
-func NewRotateInstruction(function function, mode uint32, speed uint32, rotationalAmount uint32) *RotateInstruction {
+func NewRotateInstruction(name string, function function, mode uint32, speed uint32, rotationalAmount uint32) *RotateInstruction {
 	return &RotateInstruction{
-		Instruction:      NewInstruction(ROTATE),
+		Instruction: Instruction{
+			InstructionType: ROTATE,
+			InstructionName: name,
+		},
 		Function:         function,
 		Mode:             mode,
 		Speed:            speed,

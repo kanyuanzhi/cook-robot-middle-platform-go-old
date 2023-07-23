@@ -38,7 +38,7 @@ func (c *Controller) Execute(ctx *gin.Context) {
 		model.NewFailResponse(ctx, err.Error())
 		return
 	}
-	logger.Log.Println(commandReq)
+	//logger.Log.Println(commandReq)
 	var commandStruct command.Command
 	if commandReq.CommandType == command.COMMAND_TYPE_MULTIPLE {
 		// 多指令
@@ -50,7 +50,7 @@ func (c *Controller) Execute(ctx *gin.Context) {
 				model.NewFailResponse(ctx, err.Error())
 				return
 			}
-			logger.Log.Println(dbDish)
+			//logger.Log.Println(dbDish)
 			var stepsJSON []map[string]interface{}
 			err = json.Unmarshal([]byte(dbDish.Steps), &stepsJSON)
 			if err != nil {
@@ -60,10 +60,10 @@ func (c *Controller) Execute(ctx *gin.Context) {
 			var instructions []instruction.Instructioner
 
 			// 开始先启动转动
-			instructions = append(instructions, instruction.NewRotateInstruction("start", 1, 350, 0))
+			instructions = append(instructions, instruction.NewRotateInstruction("转动自启动", "start", 1, 350, 0))
 
 			for _, step := range stepsJSON {
-				instructionType := instruction.InstructionType(step["type"].(string))
+				instructionType := instruction.InstructionType(step["instructionType"].(string))
 				var instructionStruct instruction.Instructioner
 				if instructionType != instruction.SEASONING {
 					instructionStruct = instruction.InstructionTypeToStruct[instructionType]
@@ -77,16 +77,17 @@ func (c *Controller) Execute(ctx *gin.Context) {
 						pumpNumber := fmt.Sprintf("%.0f", seasoning.(map[string]interface{})["pumpNumber"].(float64))
 						pumpToWeightMap[pumpNumber] = uint32(seasoning.(map[string]interface{})["weight"].(float64))
 					}
-					instructionStruct = instruction.NewSeasoningInstruction(pumpToWeightMap)
+					instructionStruct = instruction.NewSeasoningInstruction(step["instructionName"].(string), pumpToWeightMap)
 				}
 				instructions = append(instructions, instructionStruct)
 			}
 
-			instructions = append(instructions, instruction.NewResetRTInstruction())
+			instructions = append(instructions, instruction.NewResetRTInstruction("停止"))
 
 			commandStruct = command.Command{
 				CommandName:  command.COMMAND_NAME_COOK,
 				CommandType:  command.COMMAND_TYPE_MULTIPLE,
+				DishUuid:     commandReq.CommandData,
 				Instructions: instructions,
 			}
 
