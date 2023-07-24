@@ -36,6 +36,8 @@ func (h *HTTPServer) Run() {
 
 	controller := v1.NewController(h.grpcClient)
 
+	system := v1.NewSystem(h.grpcClient)
+
 	apiV1 := h.router.Group("/api/v1")
 	{
 		apiV1.POST("/dish", dish.Create)
@@ -54,6 +56,9 @@ func (h *HTTPServer) Run() {
 		apiV1.GET("/controller/fetchStatus", controller.FetchStatus)
 		apiV1.GET("/controller/pause", controller.Pause)
 		apiV1.GET("/controller/resume", controller.Resume)
+
+		apiV1.GET("/system/getQrCode", system.GetQrCode)
+		apiV1.GET("/system/shutdown", system.Shutdown)
 	}
 
 	err := h.router.Run(":8889")

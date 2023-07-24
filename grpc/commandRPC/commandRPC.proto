@@ -9,6 +9,7 @@ service CommandService {
   rpc FetchStatus(FetchRequest) returns (FetchResponse) {}
   rpc Pause(PauseAndResumeRequest) returns (PauseAndResumeResponse) {}
   rpc Resume(PauseAndResumeRequest) returns (PauseAndResumeResponse) {}
+  rpc Shutdown(ShutdownRequest) returns (ShutdownResponse) {}
 }
 
 message CommandRequest {
@@ -35,4 +36,12 @@ message PauseAndResumeResponse {
   int32 result = 1;
 }
 
-//protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative math.proto
+message ShutdownRequest {
+  bool empty = 1;
+}
+
+message ShutdownResponse {
+  int32 result = 1;
+}
+
+//protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative commandRPC.proto

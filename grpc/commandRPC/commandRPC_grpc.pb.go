@@ -26,6 +26,7 @@ type CommandServiceClient interface {
 	FetchStatus(ctx context.Context, in *FetchRequest, opts ...grpc.CallOption) (*FetchResponse, error)
 	Pause(ctx context.Context, in *PauseAndResumeRequest, opts ...grpc.CallOption) (*PauseAndResumeResponse, error)
 	Resume(ctx context.Context, in *PauseAndResumeRequest, opts ...grpc.CallOption) (*PauseAndResumeResponse, error)
+	Shutdown(ctx context.Context, in *ShutdownRequest, opts ...grpc.CallOption) (*ShutdownResponse, error)
 }
 
 type commandServiceClient struct {
@@ -72,6 +73,15 @@ func (c *commandServiceClient) Resume(ctx context.Context, in *PauseAndResumeReq
 	return out, nil
 }
 
+func (c *commandServiceClient) Shutdown(ctx context.Context, in *ShutdownRequest, opts ...grpc.CallOption) (*ShutdownResponse, error) {
+	out := new(ShutdownResponse)
+	err := c.cc.Invoke(ctx, "/commandRPC.CommandService/Shutdown", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CommandServiceServer is the server API for CommandService service.
 // All implementations must embed UnimplementedCommandServiceServer
 // for forward compatibility
@@ -80,6 +90,7 @@ type CommandServiceServer interface {
 	FetchStatus(context.Context, *FetchRequest) (*FetchResponse, error)
 	Pause(context.Context, *PauseAndResumeRequest) (*PauseAndResumeResponse, error)
 	Resume(context.Context, *PauseAndResumeRequest) (*PauseAndResumeResponse, error)
+	Shutdown(context.Context, *ShutdownRequest) (*ShutdownResponse, error)
 	mustEmbedUnimplementedCommandServiceServer()
 }
 
@@ -98,6 +109,9 @@ func (UnimplementedCommandServiceServer) Pause(context.Context, *PauseAndResumeR
 }
 func (UnimplementedCommandServiceServer) Resume(context.Context, *PauseAndResumeRequest) (*PauseAndResumeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Resume not implemented")
+}
+func (UnimplementedCommandServiceServer) Shutdown(context.Context, *ShutdownRequest) (*ShutdownResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Shutdown not implemented")
 }
 func (UnimplementedCommandServiceServer) mustEmbedUnimplementedCommandServiceServer() {}
 
@@ -184,6 +198,24 @@ func _CommandService_Resume_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CommandService_Shutdown_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ShutdownRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommandServiceServer).Shutdown(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/commandRPC.CommandService/Shutdown",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommandServiceServer).Shutdown(ctx, req.(*ShutdownRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CommandService_ServiceDesc is the grpc.ServiceDesc for CommandService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -206,6 +238,10 @@ var CommandService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Resume",
 			Handler:    _CommandService_Resume_Handler,
+		},
+		{
+			MethodName: "Shutdown",
+			Handler:    _CommandService_Shutdown_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

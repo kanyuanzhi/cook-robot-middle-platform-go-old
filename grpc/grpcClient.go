@@ -69,7 +69,7 @@ func (g *GRPCClient) FetchStatus() {
 	defer cancel()
 	res, err := g.Client.FetchStatus(ctxGRPC, req)
 	if err != nil {
-		logger.Log.Printf("gRPC调用失败: %v", err)
+		//logger.Log.Printf("gRPC调用失败: %v", err)
 		return
 	}
 
