@@ -10,6 +10,7 @@ const (
 	COMMAND_NAME_DISH_OUT     = "dish_out"     // multiple
 	COMMAND_NAME_RESUME       = "resume"       // single
 	COMMAND_NAME_PAUSE_TO_ADD = "pause_to_add" // single
+	COMMAND_NAME_HEAT         = "heat"         // single
 )
 
 const (

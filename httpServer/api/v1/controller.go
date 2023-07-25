@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/mapstructure"
+	"strconv"
 	"time"
 )
 
@@ -135,6 +136,22 @@ func (c *Controller) Execute(ctx *gin.Context) {
 				CommandType:  command.COMMAND_TYPE_SINGLE,
 				Instructions: instructions,
 			}
+		} else if commandReq.CommandName == command.COMMAND_NAME_HEAT {
+			var instructions []instruction.Instructioner
+			temperature, err := strconv.ParseFloat(commandReq.CommandData, 10)
+			if err != nil {
+				logger.Log.Println("无法将字符串转换为uint32")
+				return
+			}
+			instructions = append(instructions, instruction.NewHeatInstruction(temperature, 0, 0, instruction.NO_JUDGE))
+			commandStruct = command.Command{
+				CommandName:  command.COMMAND_NAME_HEAT,
+				CommandType:  command.COMMAND_TYPE_SINGLE,
+				Instructions: instructions,
+			}
+		} else {
+			logger.Log.Println("命令名称错误")
+			return
 		}
 	}
 

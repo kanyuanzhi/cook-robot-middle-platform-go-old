@@ -26,10 +26,11 @@ type ControllerStatus struct {
 	IsCooking                       bool             `json:"isCooking"`
 	IsPausingWithMovingFinished     bool             `json:"isPausingWithMovingFinished"`
 	IsPausingWithMovingBackFinished bool             `json:"isPausingWithMovingBackFinished"`
-	IsStirFrying                    bool             `json:"isStirFrying"`
+	IsPausePermitted                bool             `json:"isPausePermitted"`
 	BottomTemperature               uint32           `json:"bottomTemperature"`
 	InfraredTemperature             uint32           `json:"infraredTemperature"`
 	CookingTime                     int64            `json:"cookingTime"`
+	CurrentHeatingTemperature       uint32           `json:"currentHeatingTemperature"`
 }
 
 type GRPCClient struct {
