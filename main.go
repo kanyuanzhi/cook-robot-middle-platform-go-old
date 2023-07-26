@@ -1,16 +1,17 @@
 package main
 
 import (
+	"cook-robot-middle-platform-go/config"
 	"cook-robot-middle-platform-go/grpc"
 	"cook-robot-middle-platform-go/httpServer"
 	"time"
 )
 
 func main() {
-	grpcClient := grpc.NewGRPCClient()
+	grpcClient := grpc.NewGRPCClient(config.App.GRPC.TargetHost, config.App.GRPC.TargetPort)
 	go grpcClient.Run()
 
-	httpSever := httpServer.NewHTTPServer(grpcClient)
+	httpSever := httpServer.NewHTTPServer(config.App.HTTP.Host, config.App.HTTP.Port, grpcClient)
 	go httpSever.Run()
 
 	//seasonings := []*model.DBSeasoning{&model.DBSeasoning{

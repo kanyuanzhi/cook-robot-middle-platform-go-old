@@ -1,0 +1,9 @@
+debugMode: true
+
+grpc:
+  targetHost: "localhost"
+  targetPort: 50051
+
+http:
+  host: "0.0.0.0"
+  port: 8880

@@ -5,6 +5,7 @@ import (
 	pb "cook-robot-middle-platform-go/grpc/commandRPC" // 替换为你的实际包路径
 	"cook-robot-middle-platform-go/logger"
 	"encoding/json"
+	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"time"
@@ -34,17 +35,24 @@ type ControllerStatus struct {
 }
 
 type GRPCClient struct {
+	targetHost string
+	targetPort uint16
+
 	Client pb.CommandServiceClient
 
 	ControllerStatus ControllerStatus
 }
 
-func NewGRPCClient() *GRPCClient {
-	return &GRPCClient{}
+func NewGRPCClient(targetHost string, targetPort uint16) *GRPCClient {
+	return &GRPCClient{
+		targetHost: targetHost,
+		targetPort: targetPort,
+	}
 }
 
 func (g *GRPCClient) Run() {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", g.targetHost, g.targetPort),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.Log.Println(err)
 		return

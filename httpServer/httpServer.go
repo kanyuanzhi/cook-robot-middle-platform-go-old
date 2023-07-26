@@ -4,16 +4,20 @@ import (
 	"cook-robot-middle-platform-go/grpc"
 	v1 "cook-robot-middle-platform-go/httpServer/api/v1"
 	"cook-robot-middle-platform-go/httpServer/middleware"
+	"fmt"
 	"github.com/gin-gonic/gin"
 )
 
 type HTTPServer struct {
+	host string
+	port uint16
+
 	router     *gin.Engine
 	grpcClient *grpc.GRPCClient
 }
 
-func NewHTTPServer(grpcClient *grpc.GRPCClient) *HTTPServer {
-	gin.SetMode(gin.ReleaseMode)
+func NewHTTPServer(host string, port uint16, grpcClient *grpc.GRPCClient) *HTTPServer {
+	//gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
 	router.Use(middleware.Cors())
@@ -22,6 +26,8 @@ func NewHTTPServer(grpcClient *grpc.GRPCClient) *HTTPServer {
 	router.Use(gin.LoggerWithWriter(gin.DefaultWriter, "/api/v1/controller/fetchStatus"))
 
 	return &HTTPServer{
+		host:       host,
+		port:       port,
 		router:     router,
 		grpcClient: grpcClient,
 	}
@@ -62,7 +68,7 @@ func (h *HTTPServer) Run() {
 		apiV1.GET("/system/shutdown", system.Shutdown)
 	}
 
-	err := h.router.Run(":8889")
+	err := h.router.Run(fmt.Sprintf("%s:%d", h.host, h.port))
 	if err != nil {
 		return
 	}
