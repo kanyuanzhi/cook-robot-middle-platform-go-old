@@ -173,6 +173,36 @@ type DishQueryReq struct {
 	PageIndex int    `json:"pageIndex" form:"pageIndex"`
 }
 
+func (d *Dish) ListAll(ctx *gin.Context) {
+	var dishQueryReq DishQueryReq
+	if err := ctx.BindQuery(&dishQueryReq); err != nil {
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	var dbDishes []model.DBDish
+	var count int64
+	err := db.SQLiteDB.Limit(dishQueryReq.PageSize).Offset((dishQueryReq.PageIndex - 1) * dishQueryReq.PageSize).
+		Find(&dbDishes).Count(&count).Error
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	var dishes []model.Dish
+	for _, dbDish := range dbDishes {
+		dishes = append(dishes, model.Dish{
+			CreatedAt: dbDish.CreatedAt,
+			UpdatedAt: dbDish.UpdatedAt,
+			UUID:      dbDish.UUID.String(),
+			Name:      dbDish.Name,
+			Image:     base64.StdEncoding.EncodeToString(dbDish.Image),
+		})
+	}
+	model.NewSuccessResponse(ctx, map[string]interface{}{
+		"dishes": dishes,
+		"count":  count})
+}
+
 func (d *Dish) ListByCuisine(ctx *gin.Context) {
 	var dishQueryReq DishQueryReq
 	if err := ctx.BindQuery(&dishQueryReq); err != nil {

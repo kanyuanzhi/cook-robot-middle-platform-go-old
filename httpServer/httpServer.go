@@ -45,6 +45,7 @@ func (h *HTTPServer) Run() {
 		apiV1.GET("/dish", dish.Get)
 		apiV1.DELETE("/dish", dish.Delete)
 		apiV1.GET("/dishes", dish.ListByCuisine)
+		apiV1.GET("/allDishes", dish.ListAll)
 
 		apiV1.GET("/customDishes", customDish.ListByDishUUID)
 
