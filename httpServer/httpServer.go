@@ -17,7 +17,7 @@ type HTTPServer struct {
 }
 
 func NewHTTPServer(host string, port uint16, grpcClient *grpc.GRPCClient) *HTTPServer {
-	//gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
 	router.Use(middleware.Cors())
