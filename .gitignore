@@ -6,3 +6,6 @@
 *.db
 
 cook-robot-middle-platform-go
+
+go.mod
+go.sum
