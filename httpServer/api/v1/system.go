@@ -99,6 +99,13 @@ func (s *System) Update(ctx *gin.Context) {
 		config.App.SoftwareUpdate.Filename)
 	s.downloadAndSaveFile(fileURL)
 
+	uiFolderPath := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.UIFolderName)
+	err = os.RemoveAll(uiFolderPath)
+	if err != nil {
+		logger.Log.Printf("Error deleting folder:", err)
+		return
+	}
+
 	zipFile := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.Filename)
 	s.unzipFile(zipFile)
 }

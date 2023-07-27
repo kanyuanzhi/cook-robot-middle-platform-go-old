@@ -28,11 +28,12 @@ type HTTPConfig struct {
 }
 
 type SoftwareUpdate struct {
-	ServerHost string `mapstructure:"serverHost"`
-	ServerPort uint16 `mapstructure:"serverPort"`
-	Filename   string `mapstructure:"filename"`
-	SavePath   string `mapstructure:"savePath"`
-	UnzipPath  string `mapstructure:"unzipPath"`
+	ServerHost   string `mapstructure:"serverHost"`
+	ServerPort   uint16 `mapstructure:"serverPort"`
+	Filename     string `mapstructure:"filename"`
+	SavePath     string `mapstructure:"savePath"`
+	UnzipPath    string `mapstructure:"unzipPath"`
+	UIFolderName string `mapstructure:"uiFolderName"`
 }
 
 func (m *AppConfig) Reload() {
@@ -78,11 +79,12 @@ func init() {
 			Port: 8889,
 		},
 		SoftwareUpdate: SoftwareUpdate{
-			ServerHost: "http://124.71.146.83",
-			ServerPort: 12306,
-			Filename:   "software.zip",
-			SavePath:   ".",
-			UnzipPath:  ".\\unzip",
+			ServerHost:   "http://124.71.146.83",
+			ServerPort:   12306,
+			Filename:     "software.zip",
+			SavePath:     ".",
+			UnzipPath:    ".\\unzip",
+			UIFolderName: "cookRobot-linux-arm64",
 		},
 	}
 	App.Reload()

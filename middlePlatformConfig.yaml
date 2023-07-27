@@ -14,3 +14,4 @@ softwareUpdate:
   filename: "test.zip"
   savePath: "."
   unzipPath: ".\\unzip"
+  uiFolderName: "cookRobot-linux-arm64"
