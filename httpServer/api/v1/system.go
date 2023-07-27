@@ -185,12 +185,14 @@ func (s *System) unzipFile(zipFile string) {
 	// 打开ZIP文件
 	r, err := zip.OpenReader(zipFile)
 	if err != nil {
+		logger.Log.Printf("error:%s", err.Error())
 		return
 	}
 	defer r.Close()
 
 	// 创建目标文件夹
 	if err := os.MkdirAll(config.App.SoftwareUpdate.UnzipPath, 0755); err != nil {
+		logger.Log.Printf("error:%s", err.Error())
 		return
 	}
 
@@ -202,6 +204,7 @@ func (s *System) unzipFile(zipFile string) {
 		// 打开ZIP文件中的文件
 		rc, err := file.Open()
 		if err != nil {
+			logger.Log.Printf("error:%s", err.Error())
 			return
 		}
 		defer rc.Close()
@@ -210,6 +213,7 @@ func (s *System) unzipFile(zipFile string) {
 		dstPath := filepath.Join(config.App.SoftwareUpdate.UnzipPath, file.Name)
 		dstFile, err := os.Create(dstPath)
 		if err != nil {
+			logger.Log.Printf("error:%s", err.Error())
 			return
 		}
 		defer dstFile.Close()
@@ -217,6 +221,7 @@ func (s *System) unzipFile(zipFile string) {
 		// 将ZIP文件中的内容复制到目标文件
 		_, err = io.Copy(dstFile, rc)
 		if err != nil {
+			logger.Log.Printf("error:%s", err.Error())
 			return
 		}
 
@@ -224,12 +229,14 @@ func (s *System) unzipFile(zipFile string) {
 		unzipProgress := float64(completedFiles) / float64(totalFiles)
 		err = s.sendProgress(true, false, 1, unzipProgress, 0, 0)
 		if err != nil {
+			logger.Log.Printf("error:%s", err.Error())
 			return
 		}
 	}
 
 	err = s.sendProgress(true, true, 1, 1, 0, 0)
 	if err != nil {
+		logger.Log.Printf("error:%s", err.Error())
 		return
 	}
 }
