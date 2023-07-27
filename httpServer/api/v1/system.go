@@ -103,13 +103,6 @@ func (s *System) Update(ctx *gin.Context) {
 		return
 	}
 
-	uiFolderPath := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.UIFolderName)
-	err = os.RemoveAll(uiFolderPath)
-	if err != nil {
-		logger.Log.Printf("Error deleting folder:", err)
-		return
-	}
-
 	zipFile := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.Filename)
 	err = s.unzipFile(zipFile)
 	if err != nil {
@@ -215,10 +208,21 @@ func (s *System) unzipFile(zipFile string) error {
 
 		// 如果文件是文件夹，创建对应的文件夹
 		if file.FileInfo().IsDir() {
-			os.MkdirAll(extractedFilePath, file.Mode())
+			// 如果压缩包中含有electron ui的打包文件夹，则先删除后再解压
+			if file.Name == config.App.SoftwareUpdate.UIFolderName {
+				uiFolderPath := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.UIFolderName)
+				err = os.RemoveAll(uiFolderPath)
+				if err != nil {
+					return err
+				}
+			}
+			err = os.MkdirAll(extractedFilePath, file.Mode())
+			if err != nil {
+				return err
+			}
 		} else {
 			// 否则，创建上层文件夹并解压文件
-			if err := os.MkdirAll(filepath.Dir(extractedFilePath), 0755); err != nil {
+			if err = os.MkdirAll(filepath.Dir(extractedFilePath), 0755); err != nil {
 				return err
 			}
 			// 打开ZIP文件中的文件
