@@ -1,22 +1,37 @@
 package v1
 
 import (
+	"archive/zip"
 	"context"
+	"cook-robot-middle-platform-go/config"
 	"cook-robot-middle-platform-go/grpc"
 	pb "cook-robot-middle-platform-go/grpc/commandRPC"
+	"cook-robot-middle-platform-go/httpServer/model"
 	"cook-robot-middle-platform-go/logger"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+	"io"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strconv"
+	"sync"
 	"time"
 )
 
 type System struct {
 	grpcClient *grpc.GRPCClient
+
+	ws            *websocket.Conn
+	isUpdating    bool // 是否正在更新软件
+	updatingMutex sync.Mutex
 }
 
 func NewSystem(grpcClient *grpc.GRPCClient) *System {
 	return &System{
 		grpcClient: grpcClient,
+		isUpdating: false,
 	}
 }
 
@@ -33,4 +48,205 @@ func (s *System) Shutdown(ctx *gin.Context) {
 
 func (s *System) GetQrCode(ctx *gin.Context) {
 
+}
+
+func (s *System) CheckUpdatePermission(ctx *gin.Context) {
+	// 检查控制器是否处在运行状态，运行状态下不允许更新
+	if s.grpcClient.ControllerStatus.IsRunning || s.isUpdating {
+		model.NewSuccessResponse(ctx, gin.H{
+			"isRunning":       s.grpcClient.ControllerStatus.IsRunning,
+			"isUpdating":      s.isUpdating,
+			"updatePermitted": false,
+		})
+	} else {
+		model.NewSuccessResponse(ctx, gin.H{
+			"isRunning":       s.grpcClient.ControllerStatus.IsRunning,
+			"isUpdating":      s.isUpdating,
+			"updatePermitted": true,
+		})
+	}
+}
+
+func (s *System) Update(ctx *gin.Context) {
+	if s.isUpdating {
+		logger.Log.Println("正在更新中，拒绝再次更新")
+		return
+	}
+	s.isUpdating = true
+
+	defer func() {
+		s.isUpdating = false
+	}()
+
+	var upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+
+	conn, err := upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	if err != nil {
+		return
+	}
+	logger.Log.Println("建立WebSocket连接")
+	s.ws = conn
+	defer func() {
+		conn.Close()
+		s.ws = nil
+	}()
+
+	fileURL := fmt.Sprintf("%s:%d/%s", config.App.SoftwareUpdate.ServerHost, config.App.SoftwareUpdate.ServerPort,
+		config.App.SoftwareUpdate.Filename)
+	s.downloadAndSaveFile(fileURL)
+
+	zipFile := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.Filename)
+	s.unzipFile(zipFile)
+}
+
+func (s *System) downloadAndSaveFile(fileURL string) {
+	resp, err := http.Get(fileURL)
+	if err != nil {
+		logger.Log.Printf("error:%s", err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	// 检查HTTP响应状态码
+	if resp.StatusCode != http.StatusOK {
+		logger.Log.Printf("服务器返回非200状态码: %d", resp.StatusCode)
+		return
+	}
+
+	// 获取文件的总大小
+	totalSize, err := strconv.Atoi(resp.Header.Get("Content-Length"))
+	if err != nil {
+		logger.Log.Printf("error:", err.Error())
+		return
+	}
+
+	// 创建本地文件
+	file, err := os.Create(filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.Filename))
+	if err != nil {
+		logger.Log.Printf("error:%s", err.Error())
+		return
+	}
+	defer file.Close()
+
+	buf := make([]byte, 10240) // 缓冲区大小可以根据需求调整
+	startTime := time.Now()
+	lastTime := startTime
+	lastBytes := 0
+	totalBytes := 0
+
+	var downloadSpeed float64 = 0
+	for {
+		n, err := resp.Body.Read(buf)
+		if n > 0 {
+			_, err = file.Write(buf[:n])
+			if err != nil {
+				logger.Log.Printf("error:%s", err.Error())
+				return
+			}
+			totalBytes += n
+
+			currentTime := time.Now()
+			elapsedTime := currentTime.Sub(lastTime).Milliseconds()
+			if elapsedTime > 1000 {
+				downloadSpeed = float64(totalBytes-lastBytes) / (float64(elapsedTime) / 1000) / 1024 / 1024 // MB/s
+				lastTime = currentTime
+				lastBytes = totalBytes + n
+			}
+
+			// 实时发送下载进度到前端
+			downloadProgress := float64(totalBytes) / float64(totalSize)
+			err = s.sendProgress(false, false, downloadProgress, 0, downloadSpeed, 0)
+			if err != nil {
+				return
+			}
+
+		}
+		if err == io.EOF {
+			logger.Log.Println("下载完毕")
+			break
+		}
+		if err != nil {
+			logger.Log.Printf("error:%s", err.Error())
+			return
+		}
+	}
+	err = s.sendProgress(true, false, 1, 0, 0, 0)
+	if err != nil {
+		return
+	}
+}
+
+func (s *System) unzipFile(zipFile string) {
+
+	// 打开ZIP文件
+	r, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return
+	}
+	defer r.Close()
+
+	// 创建目标文件夹
+	if err := os.MkdirAll(config.App.SoftwareUpdate.UnzipPath, 0755); err != nil {
+		return
+	}
+
+	totalFiles := len(r.File)
+	completedFiles := 0
+
+	// 遍历ZIP文件中的每个文件
+	for _, file := range r.File {
+		// 打开ZIP文件中的文件
+		rc, err := file.Open()
+		if err != nil {
+			return
+		}
+		defer rc.Close()
+
+		// 创建目标文件
+		dstPath := filepath.Join(config.App.SoftwareUpdate.UnzipPath, file.Name)
+		dstFile, err := os.Create(dstPath)
+		if err != nil {
+			return
+		}
+		defer dstFile.Close()
+
+		// 将ZIP文件中的内容复制到目标文件
+		_, err = io.Copy(dstFile, rc)
+		if err != nil {
+			return
+		}
+
+		completedFiles++
+		unzipProgress := float64(completedFiles) / float64(totalFiles)
+		err = s.sendProgress(true, false, 1, unzipProgress, 0, 0)
+		if err != nil {
+			return
+		}
+	}
+
+	err = s.sendProgress(true, true, 1, 1, 0, 0)
+	if err != nil {
+		return
+	}
+}
+
+func (s *System) sendProgress(isDownloadFinished bool, isUnzipFinished bool,
+	downloadProgress float64, unzipProgress float64, downloadSpeed float64, unzipSpeed float64) error {
+	//logger.Log.Println(downloadProgress, unzipProgress, downloadSpeed, unzipSpeed)
+	err := s.ws.WriteJSON(gin.H{
+		"isDownloadFinished": isDownloadFinished,
+		"isUnzipFinished":    isUnzipFinished,
+		"downloadProgress":   downloadProgress,
+		"unzipProgress":      unzipProgress,
+		"downloadSpeed":      downloadSpeed,
+		"unzipSpeed":         unzipSpeed,
+	})
+	if err != nil {
+		logger.Log.Printf("error:%s", err.Error())
+	}
+	return err
 }

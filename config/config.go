@@ -10,6 +10,13 @@ import (
 
 var App *AppConfig
 
+type AppConfig struct {
+	DebugMode      bool
+	GRPC           GRPCConfig     `mapstructure:"grpc"`
+	HTTP           HTTPConfig     `mapstructure:"http"`
+	SoftwareUpdate SoftwareUpdate `mapstructure:"softwareUpdate"`
+}
+
 type GRPCConfig struct {
 	TargetHost string `mapstructure:"targetHost"`
 	TargetPort uint16 `mapstructure:"targetPort"`
@@ -20,10 +27,12 @@ type HTTPConfig struct {
 	Port uint16 `mapstructure:"port"`
 }
 
-type AppConfig struct {
-	DebugMode bool
-	GRPC      GRPCConfig `mapstructure:"grpc"`
-	HTTP      HTTPConfig `mapstructure:"http"`
+type SoftwareUpdate struct {
+	ServerHost string `mapstructure:"serverHost"`
+	ServerPort uint16 `mapstructure:"serverPort"`
+	Filename   string `mapstructure:"filename"`
+	SavePath   string `mapstructure:"savePath"`
+	UnzipPath  string `mapstructure:"unzipPath"`
 }
 
 func (m *AppConfig) Reload() {
@@ -67,6 +76,13 @@ func init() {
 		HTTP: HTTPConfig{
 			Host: "0.0.0.0",
 			Port: 8889,
+		},
+		SoftwareUpdate: SoftwareUpdate{
+			ServerHost: "http://124.71.146.83",
+			ServerPort: 12306,
+			Filename:   "software.zip",
+			SavePath:   ".",
+			UnzipPath:  ".\\unzip",
 		},
 	}
 	App.Reload()

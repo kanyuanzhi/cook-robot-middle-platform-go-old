@@ -8,3 +8,6 @@
 cook-robot-middle-platform-go
 
 go.sum
+
+*.zip
+unzip

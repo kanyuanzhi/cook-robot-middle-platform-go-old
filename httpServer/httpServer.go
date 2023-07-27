@@ -66,6 +66,8 @@ func (h *HTTPServer) Run() {
 
 		apiV1.GET("/system/getQrCode", system.GetQrCode)
 		apiV1.GET("/system/shutdown", system.Shutdown)
+		apiV1.GET("/system/checkUpdatePermission", system.CheckUpdatePermission)
+		apiV1.GET("/system/update", system.Update)
 	}
 
 	err := h.router.Run(fmt.Sprintf("%s:%d", h.host, h.port))
