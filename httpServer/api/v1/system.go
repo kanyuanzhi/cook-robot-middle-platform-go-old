@@ -97,7 +97,11 @@ func (s *System) Update(ctx *gin.Context) {
 
 	fileURL := fmt.Sprintf("%s:%d/%s", config.App.SoftwareUpdate.ServerHost, config.App.SoftwareUpdate.ServerPort,
 		config.App.SoftwareUpdate.Filename)
-	s.downloadAndSaveFile(fileURL)
+	err = s.downloadAndSaveFile(fileURL)
+	if err != nil {
+		logger.Log.Printf("downloadAndSaveFile error:%s", err.Error())
+		return
+	}
 
 	uiFolderPath := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.UIFolderName)
 	err = os.RemoveAll(uiFolderPath)
@@ -107,35 +111,35 @@ func (s *System) Update(ctx *gin.Context) {
 	}
 
 	zipFile := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.Filename)
-	s.unzipFile(zipFile)
+	err = s.unzipFile(zipFile)
+	if err != nil {
+		logger.Log.Printf("unzipFile error:%s", err.Error())
+		return
+	}
 }
 
-func (s *System) downloadAndSaveFile(fileURL string) {
+func (s *System) downloadAndSaveFile(fileURL string) error {
 	resp, err := http.Get(fileURL)
 	if err != nil {
-		logger.Log.Printf("error:%s", err.Error())
-		return
+		return err
 	}
 	defer resp.Body.Close()
 
 	// 检查HTTP响应状态码
 	if resp.StatusCode != http.StatusOK {
-		logger.Log.Printf("服务器返回非200状态码: %d", resp.StatusCode)
-		return
+		return err
 	}
 
 	// 获取文件的总大小
 	totalSize, err := strconv.Atoi(resp.Header.Get("Content-Length"))
 	if err != nil {
-		logger.Log.Printf("error:", err.Error())
-		return
+		return err
 	}
 
 	// 创建本地文件
 	file, err := os.Create(filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.Filename))
 	if err != nil {
-		logger.Log.Printf("error:%s", err.Error())
-		return
+		return err
 	}
 	defer file.Close()
 
@@ -151,8 +155,7 @@ func (s *System) downloadAndSaveFile(fileURL string) {
 		if n > 0 {
 			_, err = file.Write(buf[:n])
 			if err != nil {
-				logger.Log.Printf("error:%s", err.Error())
-				return
+				return err
 			}
 			totalBytes += n
 
@@ -168,7 +171,7 @@ func (s *System) downloadAndSaveFile(fileURL string) {
 			downloadProgress := float64(totalBytes) / float64(totalSize)
 			err = s.sendProgress(false, false, downloadProgress, 0, downloadSpeed, 0)
 			if err != nil {
-				return
+				return err
 			}
 
 		}
@@ -177,30 +180,29 @@ func (s *System) downloadAndSaveFile(fileURL string) {
 			break
 		}
 		if err != nil {
-			logger.Log.Printf("error:%s", err.Error())
-			return
+			return err
 		}
 	}
 	err = s.sendProgress(true, false, 1, 0, 0, 0)
 	if err != nil {
-		return
+		return err
 	}
+
+	return nil
 }
 
-func (s *System) unzipFile(zipFile string) {
+func (s *System) unzipFile(zipFile string) error {
 
 	// 打开ZIP文件
 	r, err := zip.OpenReader(zipFile)
 	if err != nil {
-		logger.Log.Printf("error:%s", err.Error())
-		return
+		return err
 	}
 	defer r.Close()
 
 	// 创建目标文件夹
 	if err := os.MkdirAll(config.App.SoftwareUpdate.UnzipPath, 0755); err != nil {
-		logger.Log.Printf("error:%s", err.Error())
-		return
+		return err
 	}
 
 	totalFiles := len(r.File)
@@ -217,47 +219,44 @@ func (s *System) unzipFile(zipFile string) {
 		} else {
 			// 否则，创建上层文件夹并解压文件
 			if err := os.MkdirAll(filepath.Dir(extractedFilePath), 0755); err != nil {
-				logger.Log.Printf("error:%s", err.Error())
-				return
+				return err
 			}
 			// 打开ZIP文件中的文件
 			rc, err := file.Open()
 			if err != nil {
-				logger.Log.Printf("error:%s", err.Error())
-				return
+				return err
 			}
 			defer rc.Close()
 
 			// 创建目标文件
 			dstFile, err := os.Create(extractedFilePath)
 			if err != nil {
-				logger.Log.Printf("error:%s", err.Error())
-				return
+				return err
 			}
 			defer dstFile.Close()
 
 			// 将ZIP文件中的内容复制到目标文件
 			_, err = io.Copy(dstFile, rc)
 			if err != nil {
-				logger.Log.Printf("error:%s", err.Error())
-				return
+				return err
 			}
 
 			completedFiles++
 			unzipProgress := float64(completedFiles) / float64(totalFiles)
 			err = s.sendProgress(true, false, 1, unzipProgress, 0, 0)
 			if err != nil {
-				logger.Log.Printf("error:%s", err.Error())
-				return
+				return err
 			}
 		}
 	}
+	logger.Log.Println("解压完毕")
 
 	err = s.sendProgress(true, true, 1, 1, 0, 0)
 	if err != nil {
-		logger.Log.Printf("error:%s", err.Error())
-		return
+		return err
 	}
+
+	return nil
 }
 
 func (s *System) sendProgress(isDownloadFinished bool, isUnzipFinished bool,
