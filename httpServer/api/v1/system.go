@@ -201,36 +201,48 @@ func (s *System) unzipFile(zipFile string) {
 
 	// 遍历ZIP文件中的每个文件
 	for _, file := range r.File {
-		// 打开ZIP文件中的文件
-		rc, err := file.Open()
-		if err != nil {
-			logger.Log.Printf("error:%s", err.Error())
-			return
-		}
-		defer rc.Close()
+		// 构建解压后的文件路径
+		extractedFilePath := filepath.Join(config.App.SoftwareUpdate.UnzipPath, file.Name)
 
-		// 创建目标文件
-		dstPath := filepath.Join(config.App.SoftwareUpdate.UnzipPath, file.Name)
-		dstFile, err := os.Create(dstPath)
-		if err != nil {
-			logger.Log.Printf("error:%s", err.Error())
-			return
-		}
-		defer dstFile.Close()
+		// 如果文件是文件夹，创建对应的文件夹
+		if file.FileInfo().IsDir() {
+			os.MkdirAll(extractedFilePath, file.Mode())
+		} else {
+			// 否则，创建上层文件夹并解压文件
+			if err := os.MkdirAll(filepath.Dir(extractedFilePath), 0755); err != nil {
+				logger.Log.Printf("error:%s", err.Error())
+				return
+			}
+			// 打开ZIP文件中的文件
+			rc, err := file.Open()
+			if err != nil {
+				logger.Log.Printf("error:%s", err.Error())
+				return
+			}
+			defer rc.Close()
 
-		// 将ZIP文件中的内容复制到目标文件
-		_, err = io.Copy(dstFile, rc)
-		if err != nil {
-			logger.Log.Printf("error:%s", err.Error())
-			return
-		}
+			// 创建目标文件
+			dstFile, err := os.Create(extractedFilePath)
+			if err != nil {
+				logger.Log.Printf("error:%s", err.Error())
+				return
+			}
+			defer dstFile.Close()
 
-		completedFiles++
-		unzipProgress := float64(completedFiles) / float64(totalFiles)
-		err = s.sendProgress(true, false, 1, unzipProgress, 0, 0)
-		if err != nil {
-			logger.Log.Printf("error:%s", err.Error())
-			return
+			// 将ZIP文件中的内容复制到目标文件
+			_, err = io.Copy(dstFile, rc)
+			if err != nil {
+				logger.Log.Printf("error:%s", err.Error())
+				return
+			}
+
+			completedFiles++
+			unzipProgress := float64(completedFiles) / float64(totalFiles)
+			err = s.sendProgress(true, false, 1, unzipProgress, 0, 0)
+			if err != nil {
+				logger.Log.Printf("error:%s", err.Error())
+				return
+			}
 		}
 	}
 
