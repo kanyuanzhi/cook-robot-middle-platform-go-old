@@ -208,7 +208,6 @@ func (s *System) unzipFile(zipFile string) error {
 	for _, file := range r.File {
 		// 构建解压后的文件路径
 		extractedFilePath := filepath.Join(config.App.SoftwareUpdate.UnzipPath, file.Name)
-		logger.Log.Println(extractedFilePath)
 		// 如果文件是文件夹，创建对应的文件夹
 		if file.FileInfo().IsDir() {
 			// 如果压缩包中含有electron ui的打包文件夹，则先删除后再解压
