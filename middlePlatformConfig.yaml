@@ -9,10 +9,11 @@ http:
   port: 8889
 
 softwareUpdate:
-#  serverHost: "http://localhost"
-  serverHost: "http://124.71.146.83"
+  serverHost: "http://localhost"
+#  serverHost: "http://124.71.146.83"
   serverPort: 12306
   filename: "test.zip"
   savePath: "."
   unzipPath: ".\\unzip"
-  uiFolderName: "cookRobot-linux-arm64"
+#  uiFolderName: "cookRobot-linux-arm64"
+  uiFolderName: "123"

@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -209,9 +210,9 @@ func (s *System) unzipFile(zipFile string) error {
 		// 如果文件是文件夹，创建对应的文件夹
 		if file.FileInfo().IsDir() {
 			// 如果压缩包中含有electron ui的打包文件夹，则先删除后再解压
-			if file.Name == config.App.SoftwareUpdate.UIFolderName {
-				logger.Log.Printf("发现%s文件夹，删除\n", config.App.SoftwareUpdate.UIFolderName)
+			if strings.Contains(file.Name, config.App.SoftwareUpdate.UIFolderName) {
 				uiFolderPath := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.UIFolderName)
+				logger.Log.Printf("发现%s文件夹，删除\n", uiFolderPath)
 				err = os.RemoveAll(uiFolderPath)
 				if err != nil {
 					return err
