@@ -1,6 +1,6 @@
 #!/bin/bash
 
-chmod +x init-controller.sh init-middle-platform.sh init-ui.sh
+chmod a+x init-controller.sh init-middle-platform.sh init-ui.sh
 # 启动脚本1
 ./init-controller.sh &
 

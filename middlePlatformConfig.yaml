@@ -10,10 +10,12 @@ http:
 
 softwareUpdate:
   serverHost: "http://localhost"
-#  serverHost: "http://124.71.146.83"
+  #  serverHost: "http://124.71.146.83"
   serverPort: 12306
-  filename: "test.zip"
+  filename: "software.zip"
   savePath: "."
   unzipPath: ".\\unzip"
-#  uiFolderName: "cookRobot-linux-arm64"
-  uiFolderName: "123"
+  uiFolderName: "cookRobot-linux-arm64"
+  middlePlatformFilename: "cook-robot-middle-platform-go"
+  controllerFilename: "cook-robot-controller-go"
+#  uiFolderName: "123"
