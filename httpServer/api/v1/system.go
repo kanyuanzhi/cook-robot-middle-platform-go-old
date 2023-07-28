@@ -202,6 +202,8 @@ func (s *System) unzipFile(zipFile string) error {
 	totalFiles := len(r.File)
 	completedFiles := 0
 
+	removeUIFolderFlag := false
+
 	// 遍历ZIP文件中的每个文件
 	for _, file := range r.File {
 		// 构建解压后的文件路径
@@ -210,7 +212,8 @@ func (s *System) unzipFile(zipFile string) error {
 		// 如果文件是文件夹，创建对应的文件夹
 		if file.FileInfo().IsDir() {
 			// 如果压缩包中含有electron ui的打包文件夹，则先删除后再解压
-			if strings.Contains(file.Name, config.App.SoftwareUpdate.UIFolderName) {
+			if strings.Contains(file.Name, config.App.SoftwareUpdate.UIFolderName) && !removeUIFolderFlag {
+				removeUIFolderFlag = true
 				uiFolderPath := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.UIFolderName)
 				logger.Log.Printf("发现%s文件夹，删除\n", uiFolderPath)
 				err = os.RemoveAll(uiFolderPath)
