@@ -2,16 +2,21 @@ package v1
 
 import (
 	"archive/zip"
+	"bytes"
 	"context"
 	"cook-robot-middle-platform-go/config"
 	"cook-robot-middle-platform-go/grpc"
 	pb "cook-robot-middle-platform-go/grpc/commandRPC"
 	"cook-robot-middle-platform-go/httpServer/model"
 	"cook-robot-middle-platform-go/logger"
+	"encoding/base64"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/skip2/go-qrcode"
+	"image/png"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -48,7 +53,48 @@ func (s *System) Shutdown(ctx *gin.Context) {
 }
 
 func (s *System) GetQrCode(ctx *gin.Context) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		logger.Log.Println("Error:", err)
+		model.NewFailResponse(ctx, err)
+		return
+	}
 
+	// 遍历所有网络接口
+	for _, iface := range ifaces {
+		// 筛选出WLAN接口，可以根据具体的名称进行判断
+		if iface.Name == "wlan0" || iface.Name == "Wi-Fi" || iface.Name == "WLAN" {
+			addrs, err := iface.Addrs()
+			if err != nil {
+				logger.Log.Println("Error:", err)
+				model.NewFailResponse(ctx, err)
+				return
+			}
+
+			// 遍历该接口的IP地址
+			for _, addr := range addrs {
+				// 检查是否是IPv4地址
+				if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
+					//logger.Log.Println("WLAN IP Address:", ipnet.IP.String())
+					qr, err := qrcode.New("phonePairing:"+ipnet.IP.String(), qrcode.Medium)
+					if err != nil {
+						logger.Log.Println("Error:", err)
+						model.NewFailResponse(ctx, err)
+						return
+					}
+
+					var buf bytes.Buffer
+					png.Encode(&buf, qr.Image(256))
+
+					encodedQrImage := base64.StdEncoding.EncodeToString(buf.Bytes())
+					model.NewSuccessResponse(ctx, encodedQrImage)
+					return
+				}
+			}
+		}
+	}
+
+	model.NewFailResponse(ctx, "no ip found")
 }
 
 func (s *System) CheckUpdatePermission(ctx *gin.Context) {
@@ -94,6 +140,7 @@ func (s *System) Update(ctx *gin.Context) {
 	defer func() {
 		conn.Close()
 		s.ws = nil
+		logger.Log.Println("断开WebSocket连接")
 	}()
 
 	fileURL := fmt.Sprintf("%s:%d/%s", config.App.SoftwareUpdate.ServerHost, config.App.SoftwareUpdate.ServerPort,
@@ -163,7 +210,7 @@ func (s *System) downloadAndSaveFile(fileURL string) error {
 
 			// 实时发送下载进度到前端
 			downloadProgress := float64(totalBytes) / float64(totalSize)
-			err = s.sendProgress(false, false, downloadProgress, 0, downloadSpeed, 0)
+			err = s.sendUpdateData(false, false, downloadProgress, 0, downloadSpeed, 0)
 			if err != nil {
 				return err
 			}
@@ -177,7 +224,7 @@ func (s *System) downloadAndSaveFile(fileURL string) error {
 			return err
 		}
 	}
-	err = s.sendProgress(true, false, 1, 0, 0, 0)
+	err = s.sendUpdateData(true, false, 1, 0, 0, 0)
 	if err != nil {
 		return err
 	}
@@ -269,7 +316,7 @@ func (s *System) unzipFile(zipFile string) error {
 
 			completedFiles++
 			unzipProgress := float64(completedFiles) / float64(totalFiles)
-			err = s.sendProgress(true, false, 1, unzipProgress, 0, 0)
+			err = s.sendUpdateData(true, false, 1, unzipProgress, 0, 0)
 			if err != nil {
 				return err
 			}
@@ -277,7 +324,7 @@ func (s *System) unzipFile(zipFile string) error {
 	}
 	logger.Log.Println("解压完毕")
 
-	err = s.sendProgress(true, true, 1, 1, 0, 0)
+	err = s.sendUpdateData(true, true, 1, 1, 0, 0)
 	if err != nil {
 		return err
 	}
@@ -285,7 +332,7 @@ func (s *System) unzipFile(zipFile string) error {
 	return nil
 }
 
-func (s *System) sendProgress(isDownloadFinished bool, isUnzipFinished bool,
+func (s *System) sendUpdateData(isDownloadFinished bool, isUnzipFinished bool,
 	downloadProgress float64, unzipProgress float64, downloadSpeed float64, unzipSpeed float64) error {
 	//logger.Log.Println(downloadProgress, unzipProgress, downloadSpeed, unzipSpeed)
 	err := s.ws.WriteJSON(gin.H{
