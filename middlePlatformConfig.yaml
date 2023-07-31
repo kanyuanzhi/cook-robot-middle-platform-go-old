@@ -7,7 +7,7 @@ grpc:
 http:
   host: "0.0.0.0"
   port: 8889
-  useSSL: false
+  useSSL: true
   sslDir: "ssl"
   cerFile: "certificate.crt"
   keyFile: "private.key"
@@ -22,4 +22,3 @@ softwareUpdate:
   uiFolderName: "cookRobot-linux-arm64"
   middlePlatformFilename: "cook-robot-middle-platform-go"
   controllerFilename: "cook-robot-controller-go"
-#  uiFolderName: "123"

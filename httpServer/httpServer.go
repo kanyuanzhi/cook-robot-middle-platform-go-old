@@ -77,14 +77,9 @@ func (h *HTTPServer) Run() {
 	var err error
 	if config.App.HTTP.UseSSL {
 		logger.Log.Println("使用HTTPS")
-		path, err := os.Executable()
-		if err != nil {
-			logger.Log.Println(err)
-			return
-		}
-		dir := filepath.Dir(path)
+		dir, _ := os.Getwd()
 		cerFilePath := filepath.Join(dir, config.App.HTTP.SSLDir, config.App.HTTP.CerFile)
-		keyFilePath := filepath.Join(dir, config.App.HTTP.SSLDir, config.App.HTTP.CerFile)
+		keyFilePath := filepath.Join(dir, config.App.HTTP.SSLDir, config.App.HTTP.KeyFile)
 		err = h.router.RunTLS(fmt.Sprintf("%s:%d", h.host, h.port), cerFilePath, keyFilePath)
 	} else {
 		logger.Log.Println("使用HTTP")
