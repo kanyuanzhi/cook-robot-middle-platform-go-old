@@ -7,6 +7,10 @@ grpc:
 http:
   host: "0.0.0.0"
   port: 8889
+  useSSL: false
+  sslDir: "ssl"
+  cerFile: "certificate.crt"
+  keyFile: "private.key"
 
 softwareUpdate:
   serverHost: "http://localhost"

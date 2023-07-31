@@ -23,8 +23,12 @@ type GRPCConfig struct {
 }
 
 type HTTPConfig struct {
-	Host string `mapstructure:"host"`
-	Port uint16 `mapstructure:"port"`
+	Host    string `mapstructure:"host"`
+	Port    uint16 `mapstructure:"port"`
+	UseSSL  bool   `mapstructure:"useSSL"`
+	SSLDir  string `mapstructure:"sslDir"`
+	CerFile string `mapstructure:"cerFile"`
+	KeyFile string `mapstructure:"keyFile"`
 }
 
 type SoftwareUpdate struct {
@@ -77,8 +81,12 @@ func init() {
 			TargetPort: 50051,
 		},
 		HTTP: HTTPConfig{
-			Host: "0.0.0.0",
-			Port: 8889,
+			Host:    "0.0.0.0",
+			Port:    8889,
+			UseSSL:  false,
+			SSLDir:  "ssl",
+			CerFile: "certificate.crt",
+			KeyFile: "private.key",
 		},
 		SoftwareUpdate: SoftwareUpdate{
 			ServerHost:             "http://124.71.146.83",

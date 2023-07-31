@@ -1,11 +1,15 @@
 package httpServer
 
 import (
+	"cook-robot-middle-platform-go/config"
 	"cook-robot-middle-platform-go/grpc"
 	v1 "cook-robot-middle-platform-go/httpServer/api/v1"
 	"cook-robot-middle-platform-go/httpServer/middleware"
+	"cook-robot-middle-platform-go/logger"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"os"
+	"path/filepath"
 )
 
 type HTTPServer struct {
@@ -70,8 +74,24 @@ func (h *HTTPServer) Run() {
 		apiV1.GET("/system/update", system.Update)
 	}
 
-	err := h.router.Run(fmt.Sprintf("%s:%d", h.host, h.port))
+	var err error
+	if config.App.HTTP.UseSSL {
+		logger.Log.Println("使用HTTPS")
+		path, err := os.Executable()
+		if err != nil {
+			logger.Log.Println(err)
+			return
+		}
+		dir := filepath.Dir(path)
+		cerFilePath := filepath.Join(dir, config.App.HTTP.SSLDir, config.App.HTTP.CerFile)
+		keyFilePath := filepath.Join(dir, config.App.HTTP.SSLDir, config.App.HTTP.CerFile)
+		err = h.router.RunTLS(fmt.Sprintf("%s:%d", h.host, h.port), cerFilePath, keyFilePath)
+	} else {
+		logger.Log.Println("使用HTTP")
+		err = h.router.Run(fmt.Sprintf("%s:%d", h.host, h.port))
+	}
 	if err != nil {
+		logger.Log.Println(err)
 		return
 	}
 }
