@@ -40,7 +40,7 @@ func NewHTTPServer(host string, port uint16, grpcClient *grpc.GRPCClient) *HTTPS
 func (h *HTTPServer) Run() {
 
 	dish := v1.NewDish()
-	customDish := v1.NewCustomDish()
+	//customDish := v1.NewCustomDish()
 	cuisine := v1.NewCuisine()
 	seasoning := v1.NewSeasoning()
 
@@ -56,8 +56,9 @@ func (h *HTTPServer) Run() {
 		apiV1.DELETE("/dish", dish.Delete)
 		apiV1.GET("/dishes", dish.ListByCuisine)
 		apiV1.GET("/allDishes", dish.ListAll)
-
-		apiV1.GET("/customDishes", customDish.ListByDishUUID)
+		apiV1.GET("/customDishes", dish.ListCustomDishes)
+		apiV1.PUT("/customDishes", dish.UpdateCustomDishes)
+		//apiV1.GET("/customDishes", customDish.ListByDishUUID)
 
 		apiV1.GET("/cuisines", cuisine.List)
 

@@ -6,6 +6,7 @@ import (
 	"cook-robot-middle-platform-go/logger"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"os"
@@ -40,34 +41,45 @@ func (d *Dish) Create(ctx *gin.Context) {
 
 	uid := uuid.New()
 	dbDish := model.DBDish{
-		UUID:    uid,
-		Name:    dish.Name,
-		Steps:   string(stepsStr),
-		Cuisine: dish.Cuisine,
-		Image:   imageData,
+		UUID:     uid,
+		Name:     dish.Name,
+		Steps:    string(stepsStr),
+		IsTaste:  false,
+		DishUUID: uuid.Nil,
+		Cuisine:  dish.Cuisine,
+		Image:    imageData,
 	}
-	err = db.SQLiteDB.Create(&dbDish).Error
-	if err != nil {
-		logger.Log.Println(err)
-		model.NewFailResponse(ctx, err.Error())
-		return
-	}
-	dbCustomDishes := []model.DBCustomDish{
+	dbDishesAndItsTastes := []model.DBDish{
+		dbDish,
 		{
 			UUID:     uuid.New(),
-			DishUUID: uid,
+			Name:     dish.Name + "（口味1）",
 			Steps:    string(stepsStr),
-		}, {
+			IsTaste:  true,
+			DishUUID: uid,
+			Cuisine:  dish.Cuisine,
+			Image:    nil,
+		},
+		{
 			UUID:     uuid.New(),
-			DishUUID: uid,
+			Name:     dish.Name + "（口味2）",
 			Steps:    string(stepsStr),
-		}, {
+			IsTaste:  true,
+			DishUUID: uid,
+			Cuisine:  dish.Cuisine,
+			Image:    nil,
+		},
+		{
 			UUID:     uuid.New(),
-			DishUUID: uid,
+			Name:     dish.Name + "（口味3）",
 			Steps:    string(stepsStr),
+			IsTaste:  true,
+			DishUUID: uid,
+			Cuisine:  dish.Cuisine,
+			Image:    nil,
 		},
 	}
-	err = db.SQLiteDB.Create(&dbCustomDishes).Error
+	err = db.SQLiteDB.Create(&dbDishesAndItsTastes).Error
 	if err != nil {
 		logger.Log.Println(err)
 		model.NewFailResponse(ctx, err.Error())
@@ -101,6 +113,7 @@ func (d *Dish) Get(ctx *gin.Context) {
 	dish.Name = dbDish.Name
 	dish.UUID = dbDish.UUID.String()
 	dish.Steps = stepsJSON
+	dish.IsTaste = dbDish.IsTaste
 	dish.Cuisine = dbDish.Cuisine
 	dish.Image = base64.StdEncoding.EncodeToString(dbDish.Image)
 	dish.CreatedAt = dbDish.CreatedAt
@@ -117,15 +130,7 @@ func (d *Dish) Delete(ctx *gin.Context) {
 	}
 
 	var dbDish model.DBDish
-	err := db.SQLiteDB.Where("uuid = ?", dish.UUID).Delete(&dbDish).Error
-	if err != nil {
-		logger.Log.Println(err)
-		model.NewFailResponse(ctx, err.Error())
-		return
-	}
-	var dbCustomDish model.DBCustomDish
-
-	err = db.SQLiteDB.Where("dish_uuid = ?", dish.UUID).Delete(&dbCustomDish).Error
+	err := db.SQLiteDB.Where("uuid = ?", dish.UUID).Or("dish_uuid = ?", dish.UUID).Delete(&dbDish).Error
 	if err != nil {
 		logger.Log.Println(err)
 		model.NewFailResponse(ctx, err.Error())
@@ -158,12 +163,30 @@ func (d *Dish) Update(ctx *gin.Context) {
 		model.NewFailResponse(ctx, err.Error())
 		return
 	}
-	err = db.SQLiteDB.Model(&model.DBCustomDish{}).Where("dish_uuid = ?", dish.UUID).Update("steps", dbDish.Steps).Error
+
+	var dbCustomDishes []model.DBDish
+	err = db.SQLiteDB.Where("dish_uuid = ?", dish.UUID).Find(&dbCustomDishes).Error
 	if err != nil {
 		logger.Log.Println(err)
 		model.NewFailResponse(ctx, err.Error())
 		return
 	}
+
+	for index, dbCustomDish := range dbCustomDishes {
+		err = db.SQLiteDB.Model(&dbCustomDish).Updates(model.DBDish{Name: dish.Name + fmt.Sprintf("（口味%d）", index+1), Steps: string(stepsStr), Cuisine: dish.Cuisine}).Error
+		if err != nil {
+			logger.Log.Println(err)
+			model.NewFailResponse(ctx, err.Error())
+			return
+		}
+	}
+
+	//err = db.SQLiteDB.Model(&model.DBDish{}).Where("dish_uuid = ?", dish.UUID).Updates(model.DBDish{Name: dish.Name, Steps: string(stepsStr), Cuisine: dish.Cuisine}).Error
+	//if err != nil {
+	//	logger.Log.Println(err)
+	//	model.NewFailResponse(ctx, err.Error())
+	//	return
+	//}
 	model.NewSuccessResponse(ctx, nil)
 }
 
@@ -181,7 +204,7 @@ func (d *Dish) ListAll(ctx *gin.Context) {
 	}
 	var dbDishes []model.DBDish
 	var count int64
-	err := db.SQLiteDB.Limit(dishQueryReq.PageSize).Offset((dishQueryReq.PageIndex - 1) * dishQueryReq.PageSize).
+	err := db.SQLiteDB.Where("is_taste = ?", false).Limit(dishQueryReq.PageSize).Offset((dishQueryReq.PageIndex - 1) * dishQueryReq.PageSize).
 		Find(&dbDishes).Count(&count).Error
 	if err != nil {
 		logger.Log.Println(err)
@@ -211,7 +234,7 @@ func (d *Dish) ListByCuisine(ctx *gin.Context) {
 	}
 	var dbDishes []model.DBDish
 	var count int64
-	err := db.SQLiteDB.Where("cuisine = ?", dishQueryReq.CuisineID).
+	err := db.SQLiteDB.Where("cuisine = ? AND is_taste = ?", dishQueryReq.CuisineID, false).
 		Limit(dishQueryReq.PageSize).Offset((dishQueryReq.PageIndex - 1) * dishQueryReq.PageSize).
 		Find(&dbDishes).Count(&count).Error
 	if err != nil {
@@ -231,5 +254,122 @@ func (d *Dish) ListByCuisine(ctx *gin.Context) {
 	}
 	model.NewSuccessResponse(ctx, map[string]interface{}{
 		"dishes": dishes,
-		"count":  count})
+		"count":  count,
+	})
+}
+
+func (d *Dish) ListCustomDishes(ctx *gin.Context) {
+	var customDish model.Dish
+	if err := ctx.BindQuery(&customDish); err != nil {
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	var dbCustomDishes []model.DBDish
+	err := db.SQLiteDB.Where("dish_uuid = ?", customDish.DishUUID).Find(&dbCustomDishes).Error
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	if len(dbCustomDishes) == 0 { // 临时使用
+		var dbDish model.DBDish
+		err := db.SQLiteDB.First(&dbDish, "uuid = ?", customDish.DishUUID).Error
+		if err != nil {
+			logger.Log.Println(err)
+			model.NewFailResponse(ctx, err.Error())
+			return
+		}
+		dbDishesAndItsTastes := []model.DBDish{
+			{
+				UUID:     uuid.New(),
+				Name:     dbDish.Name + "（口味1）",
+				Steps:    dbDish.Steps,
+				IsTaste:  true,
+				DishUUID: dbDish.UUID,
+				Cuisine:  dbDish.Cuisine,
+				Image:    nil,
+			},
+			{
+				UUID:     uuid.New(),
+				Name:     dbDish.Name + "（口味2）",
+				Steps:    dbDish.Steps,
+				IsTaste:  true,
+				DishUUID: dbDish.UUID,
+				Cuisine:  dbDish.Cuisine,
+				Image:    nil,
+			},
+			{
+				UUID:     uuid.New(),
+				Name:     dbDish.Name + "（口味2）",
+				Steps:    dbDish.Steps,
+				IsTaste:  true,
+				DishUUID: dbDish.UUID,
+				Cuisine:  dbDish.Cuisine,
+				Image:    nil,
+			},
+		}
+		err = db.SQLiteDB.Create(&dbDishesAndItsTastes).Error
+		if err != nil {
+			logger.Log.Println(err)
+			model.NewFailResponse(ctx, err.Error())
+			return
+		}
+		fmt.Println(customDish.DishUUID)
+		err = db.SQLiteDB.Model(&model.DBDish{}).Where("uuid = ?", customDish.DishUUID).Update("dish_uuid", uuid.Nil).Error
+		if err != nil {
+			logger.Log.Println(err)
+			model.NewFailResponse(ctx, err.Error())
+			return
+		}
+	}
+	var customDishes []model.Dish
+
+	for _, dbCustomDish := range dbCustomDishes {
+		var stepsJSON []map[string]interface{}
+		err = json.Unmarshal([]byte(dbCustomDish.Steps), &stepsJSON)
+		if err != nil {
+			logger.Log.Println(err)
+			model.NewFailResponse(ctx, err.Error())
+			return
+		}
+		customDish.Name = dbCustomDish.Name
+		customDish.UUID = dbCustomDish.UUID.String()
+		customDish.DishUUID = dbCustomDish.DishUUID.String()
+		customDish.Steps = stepsJSON
+		customDish.IsTaste = dbCustomDish.IsTaste
+		customDish.Cuisine = dbCustomDish.Cuisine
+		customDish.CreatedAt = dbCustomDish.CreatedAt
+		customDish.UpdatedAt = dbCustomDish.UpdatedAt
+		customDishes = append(customDishes, customDish)
+	}
+
+	model.NewSuccessResponse(ctx, customDishes)
+}
+
+type UpdateCustomDishesReq struct {
+	UUIDToSteps map[string][]map[string]interface{} `json:"uuidToSteps" form:"uuidToSteps"`
+}
+
+func (d *Dish) UpdateCustomDishes(ctx *gin.Context) {
+	var req UpdateCustomDishesReq
+	if err := ctx.BindJSON(&req); err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	for uid := range req.UUIDToSteps {
+		stepsStr, err := json.Marshal(req.UUIDToSteps[uid])
+		if err != nil {
+			logger.Log.Println("转换数组为字符串失败:", err)
+			model.NewFailResponse(ctx, err.Error())
+			return
+		}
+		err = db.SQLiteDB.Model(&model.DBDish{}).Where("uuid = ?", uid).Update("steps", stepsStr).Error
+		if err != nil {
+			logger.Log.Println(err)
+			model.NewFailResponse(ctx, err.Error())
+			return
+		}
+	}
+	model.NewSuccessResponse(ctx, nil)
 }
