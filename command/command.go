@@ -5,6 +5,7 @@ import "cook-robot-middle-platform-go/instruction"
 const (
 	COMMAND_NAME_COOK         = "cook"         // multiple
 	COMMAND_NAME_WASH         = "wash"         // multiple
+	COMMAND_NAME_POUR         = "pour"         // multiple
 	COMMAND_NAME_PREPARE      = "prepare"      // multiple
 	COMMAND_NAME_DOOR_UNLOCK  = "door_unlock"  // single
 	COMMAND_NAME_DISH_OUT     = "dish_out"     // multiple

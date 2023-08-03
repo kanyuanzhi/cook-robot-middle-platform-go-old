@@ -108,8 +108,26 @@ func (c *Controller) Execute(ctx *gin.Context) {
 				CommandType:  command.COMMAND_TYPE_MULTIPLE,
 				Instructions: instructions,
 			}
+		} else if commandReq.CommandName == command.COMMAND_NAME_WASH {
+			var instructions []instruction.Instructioner
+			instructions = append(instructions, instruction.NewWashInstruction())
+			commandStruct = command.Command{
+				CommandName:  command.COMMAND_NAME_WASH,
+				CommandType:  command.COMMAND_TYPE_MULTIPLE,
+				Instructions: instructions,
+			}
+		} else if commandReq.CommandName == command.COMMAND_NAME_POUR {
+			var instructions []instruction.Instructioner
+			instructions = append(instructions, instruction.NewPourInstruction())
+			commandStruct = command.Command{
+				CommandName:  command.COMMAND_NAME_POUR,
+				CommandType:  command.COMMAND_TYPE_MULTIPLE,
+				Instructions: instructions,
+			}
+		} else {
+			logger.Log.Printf("%s指令错误", commandReq.CommandName)
+			return
 		}
-
 	} else {
 		// 单指令，立即执行
 		if commandReq.CommandName == command.COMMAND_NAME_DOOR_UNLOCK {

@@ -24,6 +24,8 @@ const (
 	DELAY            = InstructionType("delay")
 	RESUME           = InstructionType("resume")
 	PAUSE_TO_ADD     = InstructionType("pause_to_add")
+	WASH             = InstructionType("wash")
+	POUR             = InstructionType("pour")
 
 	AXIS   = InstructionType("axis")
 	ROTATE = InstructionType("rotate")
@@ -221,6 +223,26 @@ func NewPrepareInstruction() *PrepareInstruction {
 	}
 }
 
+type WashInstruction struct {
+	Instruction `mapstructure:",squash"`
+}
+
+func NewWashInstruction() *WashInstruction {
+	return &WashInstruction{
+		Instruction: NewInstruction(WASH),
+	}
+}
+
+type PourInstruction struct {
+	Instruction `mapstructure:",squash"`
+}
+
+func NewPourInstruction() *PourInstruction {
+	return &PourInstruction{
+		Instruction: NewInstruction(POUR),
+	}
+}
+
 type DelayInstruction struct {
 	Instruction `mapstructure:",squash"`
 	Duration    uint32 `json:"duration"`
@@ -267,6 +289,8 @@ var InstructionTypeToStruct = map[InstructionType]Instructioner{
 	RESET_XYT:        ResetXYTInstruction{},
 	RESET_RT:         ResetRTInstruction{},
 	PREPARE:          PrepareInstruction{},
+	WASH:             WashInstruction{},
+	POUR:             PourInstruction{},
 	DELAY:            DelayInstruction{},
 	RESUME:           ResumeInstruction{},
 	PAUSE_TO_ADD:     PauseToAddInstruction{},
