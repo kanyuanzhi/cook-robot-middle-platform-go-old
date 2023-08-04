@@ -9,6 +9,7 @@ type DBSeasoning struct {
 	UUID      uuid.UUID `json:"uuid" form:"uuid"`
 	Name      string    `json:"name" form:"name"`
 	Pump      uint32    `json:"pump" form:"pump"`
+	Ratio     uint32    `json:"ratio" form:"ratio"`
 }
 
 func (DBSeasoning) TableName() string {

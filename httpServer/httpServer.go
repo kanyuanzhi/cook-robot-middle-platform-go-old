@@ -62,7 +62,9 @@ func (h *HTTPServer) Run() {
 
 		apiV1.GET("/cuisines", cuisine.List)
 
-		apiV1.GET("/seasonings", seasoning.List)
+		apiV1.GET("/seasonings", seasoning.ListName)
+		apiV1.GET("/seasoningConfigs", seasoning.ListNameAndRatio)
+		apiV1.PUT("/seasoningConfigs", seasoning.UpdateRatio)
 
 		apiV1.POST("/controller/execute", controller.Execute)
 		apiV1.GET("/controller/fetchStatus", controller.FetchStatus)

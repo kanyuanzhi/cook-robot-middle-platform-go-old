@@ -4,6 +4,9 @@ import (
 	"cook-robot-middle-platform-go/config"
 	"cook-robot-middle-platform-go/grpc"
 	"cook-robot-middle-platform-go/httpServer"
+	"fmt"
+	"github.com/sstallion/go-hid"
+	"log"
 	"time"
 )
 
@@ -124,6 +127,33 @@ func main() {
 	//}
 	//
 	//fmt.Printf("结果X：%d\n", res.GetResult())
+
+	if err := hid.Init(); err != nil {
+		log.Fatal(err)
+	}
+
+	hid.Enumerate(hid.VendorIDAny, hid.ProductIDAny, func(info *hid.DeviceInfo) error {
+		fmt.Printf("%s: ID %04x:%04x %s %s\n",
+			info.Path,
+			info.VendorID,
+			info.ProductID,
+			info.MfrStr,
+			info.ProductStr)
+		return nil
+	})
+
+	device, err := hid.OpenFirst(0xac90, 0x3002)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(device)
+
+	buffer := make([]byte, 1000)
+	_, err = device.Read(buffer)
+	if err != nil {
+		fmt.Println(123, err)
+	}
+	fmt.Println(string(buffer))
 
 	for {
 		time.Sleep(1000 * time.Millisecond)

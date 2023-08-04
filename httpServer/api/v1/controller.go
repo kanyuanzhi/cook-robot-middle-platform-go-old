@@ -58,27 +58,54 @@ func (c *Controller) Execute(ctx *gin.Context) {
 				model.NewFailResponse(ctx, err.Error())
 				return
 			}
-			var instructions []instruction.Instructioner
 
+			var dbSeasonings []model.DBSeasoning
+			err = db.SQLiteDB.Select("pump", "ratio").Find(&dbSeasonings).Error
+			if err != nil {
+				logger.Log.Println(err)
+				model.NewFailResponse(ctx, err.Error())
+				return
+			}
+			pumpToRatioMap := map[string]uint32{}
+			for _, seasoning := range dbSeasonings {
+				pumpToRatioMap[fmt.Sprintf("%d", seasoning.Pump)] = seasoning.Ratio
+			}
+			fmt.Println(pumpToRatioMap)
+
+			var instructions []instruction.Instructioner
 			// 开始先启动转动
 			instructions = append(instructions, instruction.NewRotateInstruction("转动自启动中", "start", 1, 350, 0))
 
 			for _, step := range stepsJSON {
 				instructionType := instruction.InstructionType(step["instructionType"].(string))
 				var instructionStruct instruction.Instructioner
-				if instructionType != instruction.SEASONING {
-					instructionStruct = instruction.InstructionTypeToStruct[instructionType]
-					err := mapstructure.Decode(step, &instructionStruct)
-					if err != nil {
-						logger.Log.Println(err)
-					}
-				} else {
+				if instructionType == instruction.SEASONING {
 					pumpToWeightMap := map[string]uint32{}
 					for _, seasoning := range step["seasonings"].([]interface{}) {
 						pumpNumber := fmt.Sprintf("%.0f", seasoning.(map[string]interface{})["pumpNumber"].(float64))
 						pumpToWeightMap[pumpNumber] = uint32(seasoning.(map[string]interface{})["weight"].(float64))
 					}
-					instructionStruct = instruction.NewSeasoningInstruction(step["instructionName"].(string), pumpToWeightMap)
+					instructionStruct = instruction.NewSeasoningInstruction(step["instructionName"].(string), pumpToWeightMap, pumpToRatioMap)
+				} else {
+					instructionStruct = instruction.InstructionTypeToStruct[instructionType]
+					err := mapstructure.Decode(step, &instructionStruct)
+					if err != nil {
+						logger.Log.Println(err)
+					}
+					if instructionType == instruction.WATER {
+						if t, ok := instructionStruct.(instruction.WaterInstruction); ok {
+							t.Ratio = pumpToRatioMap["6"]
+							instructions = append(instructions, t)
+							continue
+						}
+					}
+					if instructionType == instruction.OIL {
+						if t, ok := instructionStruct.(instruction.OilInstruction); ok {
+							t.Ratio = pumpToRatioMap["1"]
+							instructions = append(instructions, t)
+							continue
+						}
+					}
 				}
 				instructions = append(instructions, instructionStruct)
 			}
