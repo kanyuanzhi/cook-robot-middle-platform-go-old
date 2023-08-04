@@ -147,16 +147,47 @@ func main() {
 		fmt.Println(err)
 	}
 	fmt.Println(device)
-	for {
-		buffer := make([]byte, 1000)
-		_, err = device.Read(buffer)
-		if err != nil {
-			fmt.Println(123, err)
-		}
-		fmt.Println(123213, string(buffer))
-	}
+	var inputBuffer []byte
 
+	for {
+		buf := make([]byte, 64)
+		n, err := device.Read(buf)
+		if err != nil {
+			fmt.Println("Error reading from HID device:", err)
+			return
+		}
+
+		if n > 0 {
+			inputBuffer = append(inputBuffer, buf[:n]...)
+
+			// 检查是否包含换行符
+			if hasNewline(inputBuffer) {
+				processCompleteString(inputBuffer)
+				inputBuffer = nil // 重置缓冲区
+			}
+		}
+
+		time.Sleep(time.Millisecond * 100)
+	}
 	for {
 		time.Sleep(1000 * time.Millisecond)
 	}
+}
+
+func hasNewline(buffer []byte) bool {
+	for _, b := range buffer {
+		if b == '\n' {
+			return true
+		}
+	}
+	return false
+}
+
+func processCompleteString(buffer []byte) {
+	// 去掉末尾的换行符
+	if buffer[len(buffer)-1] == '\n' {
+		buffer = buffer[:len(buffer)-1]
+	}
+
+	fmt.Println("Received complete string:", string(buffer))
 }
