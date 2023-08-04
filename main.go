@@ -147,13 +147,14 @@ func main() {
 		fmt.Println(err)
 	}
 	fmt.Println(device)
-
-	buffer := make([]byte, 1000)
-	_, err = device.Read(buffer)
-	if err != nil {
-		fmt.Println(123, err)
+	for {
+		buffer := make([]byte, 1000)
+		_, err = device.Read(buffer)
+		if err != nil {
+			fmt.Println(123, err)
+		}
+		fmt.Println(123213, string(buffer))
 	}
-	fmt.Println(string(buffer))
 
 	for {
 		time.Sleep(1000 * time.Millisecond)
