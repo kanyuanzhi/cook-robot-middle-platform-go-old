@@ -4,9 +4,6 @@ import (
 	"cook-robot-middle-platform-go/config"
 	"cook-robot-middle-platform-go/grpc"
 	"cook-robot-middle-platform-go/httpServer"
-	"fmt"
-	"github.com/sstallion/go-hid"
-	"log"
 	"time"
 )
 
@@ -128,66 +125,7 @@ func main() {
 	//
 	//fmt.Printf("结果X：%d\n", res.GetResult())
 
-	if err := hid.Init(); err != nil {
-		log.Fatal(err)
-	}
-
-	hid.Enumerate(hid.VendorIDAny, hid.ProductIDAny, func(info *hid.DeviceInfo) error {
-		fmt.Printf("%s: ID %04x:%04x %s %s\n",
-			info.Path,
-			info.VendorID,
-			info.ProductID,
-			info.MfrStr,
-			info.ProductStr)
-		return nil
-	})
-
-	device, err := hid.OpenFirst(0xac90, 0x3002)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(device)
-	var inputBuffer []byte
-
-	for {
-		buf := make([]byte, 64)
-		n, err := device.Read(buf)
-		if err != nil {
-			fmt.Println("Error reading from HID device:", err)
-			return
-		}
-
-		if n > 0 {
-			inputBuffer = append(inputBuffer, buf[:n]...)
-
-			// 检查是否包含换行符
-			if hasNewline(inputBuffer) {
-				processCompleteString(inputBuffer)
-				inputBuffer = nil // 重置缓冲区
-			}
-		}
-
-		time.Sleep(time.Millisecond * 100)
-	}
 	for {
 		time.Sleep(1000 * time.Millisecond)
 	}
-}
-
-func hasNewline(buffer []byte) bool {
-	for _, b := range buffer {
-		if b == '\n' {
-			return true
-		}
-	}
-	return false
-}
-
-func processCompleteString(buffer []byte) {
-	// 去掉末尾的换行符
-	if buffer[len(buffer)-1] == '\n' {
-		buffer = buffer[:len(buffer)-1]
-	}
-
-	fmt.Println("Received complete string:", string(buffer))
 }
