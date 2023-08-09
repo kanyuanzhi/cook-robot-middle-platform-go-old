@@ -373,3 +373,41 @@ func (d *Dish) UpdateCustomDishes(ctx *gin.Context) {
 	}
 	model.NewSuccessResponse(ctx, nil)
 }
+
+func (d *Dish) UploadImage(ctx *gin.Context) {
+	file, err := ctx.FormFile("file")
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	logger.Log.Println(file.Filename)
+	// Open the uploaded file
+	src, err := file.Open()
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	defer src.Close()
+
+	// Read the file content into a byte slice
+	fileData := make([]byte, file.Size)
+	_, err = src.Read(fileData)
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+	uid := ctx.PostForm("uuid")
+
+	err = db.SQLiteDB.Model(&model.DBDish{}).Where("uuid = ?", uid).Update("image", fileData).Error
+	if err != nil {
+		logger.Log.Println(err)
+		model.NewFailResponse(ctx, err.Error())
+		return
+	}
+
+	encodedData := base64.StdEncoding.EncodeToString(fileData)
+	model.NewSuccessResponse(ctx, encodedData)
+}

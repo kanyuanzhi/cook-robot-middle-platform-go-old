@@ -76,7 +76,7 @@ func (s *System) GetQrCode(ctx *gin.Context) {
 				// 检查是否是IPv4地址
 				if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() != nil {
 					//logger.Log.Println("WLAN IP Address:", ipnet.IP.String())
-					qr, err := qrcode.New("phonePairing:"+ipnet.IP.String(), qrcode.Medium)
+					qr, err := qrcode.New("phonePairing::"+ipnet.IP.String()+"\r\n", qrcode.Medium)
 					if err != nil {
 						logger.Log.Println("Error:", err)
 						model.NewFailResponse(ctx, err)

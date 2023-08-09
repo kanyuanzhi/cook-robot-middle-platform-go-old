@@ -58,6 +58,7 @@ func (h *HTTPServer) Run() {
 		apiV1.GET("/allDishes", dish.ListAll)
 		apiV1.GET("/customDishes", dish.ListCustomDishes)
 		apiV1.PUT("/customDishes", dish.UpdateCustomDishes)
+		apiV1.POST("/uploadImage", dish.UploadImage)
 		//apiV1.GET("/customDishes", customDish.ListByDishUUID)
 
 		apiV1.GET("/cuisines", cuisine.List)
