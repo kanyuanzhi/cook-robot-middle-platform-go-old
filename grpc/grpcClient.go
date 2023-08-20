@@ -21,6 +21,7 @@ type InstructionInfo struct {
 type ControllerStatus struct {
 	CurrentCommandName              string           `json:"currentCommandName"`
 	CurrentDishUuid                 string           `json:"currentDishUuid"`
+	CurrentInstructionName          string           `json:"currentInstructionName"`
 	CurrentInstructionInfo          *InstructionInfo `json:"currentInstructionInfo"`
 	IsPausing                       bool             `json:"isPausing"`
 	IsRunning                       bool             `json:"isRunning"`
@@ -30,6 +31,12 @@ type ControllerStatus struct {
 	IsPausePermitted                bool             `json:"isPausePermitted"`
 	BottomTemperature               uint32           `json:"bottomTemperature"`
 	InfraredTemperature             uint32           `json:"infraredTemperature"`
+	Pump1LiquidWarning              uint32           `json:"pump1LiquidWarning"`
+	Pump2LiquidWarning              uint32           `json:"pump2LiquidWarning"`
+	Pump3LiquidWarning              uint32           `json:"pump3LiquidWarning"`
+	Pump4LiquidWarning              uint32           `json:"pump4LiquidWarning"`
+	Pump5LiquidWarning              uint32           `json:"pump5LiquidWarning"`
+	Pump6LiquidWarning              uint32           `json:"pump6LiquidWarning"`
 	CookingTime                     int64            `json:"cookingTime"`
 	CurrentHeatingTemperature       uint32           `json:"currentHeatingTemperature"`
 }

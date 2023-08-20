@@ -26,6 +26,8 @@ const (
 	PAUSE_TO_ADD     = InstructionType("pause_to_add")
 	WASH             = InstructionType("wash")
 	POUR             = InstructionType("pour")
+	INIT             = InstructionType("init")
+	FINISH           = InstructionType("finish")
 
 	AXIS   = InstructionType("axis")
 	ROTATE = InstructionType("rotate")
@@ -219,6 +221,34 @@ func NewResetRTInstruction(name string) *ResetRTInstruction {
 	}
 }
 
+// 炒菜开始前准备动作
+type InitInstruction struct {
+	Instruction `mapstructure:",squash"`
+}
+
+func NewInitInstruction(name string) *InitInstruction {
+	return &InitInstruction{
+		Instruction: Instruction{
+			InstructionType: INIT,
+			InstructionName: name,
+		},
+	}
+}
+
+// 炒菜结束后停止动作
+type FinishInstruction struct {
+	Instruction `mapstructure:",squash"`
+}
+
+func NewFinishInstruction(name string) *FinishInstruction {
+	return &FinishInstruction{
+		Instruction: Instruction{
+			InstructionType: FINISH,
+			InstructionName: name,
+		},
+	}
+}
+
 type PrepareInstruction struct {
 	Instruction `mapstructure:",squash"`
 }
@@ -292,6 +322,8 @@ var InstructionTypeToStruct = map[InstructionType]Instructioner{
 	SHAKE:            ShakeInstruction{},
 	LAMPBLACK_PURIFY: LampblackPurifyInstruction{},
 	DOOR_UNLOCK:      DoorUnlockInstruction{},
+	INIT:             InitInstruction{},
+	FINISH:           FinishInstruction{},
 	RESET_XYT:        ResetXYTInstruction{},
 	RESET_RT:         ResetRTInstruction{},
 	PREPARE:          PrepareInstruction{},

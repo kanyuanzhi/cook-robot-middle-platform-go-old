@@ -1,4 +1,4 @@
-package v1
+package v2
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"cook-robot-middle-platform-go/db"
 	"cook-robot-middle-platform-go/grpc"
 	pb "cook-robot-middle-platform-go/grpc/commandRPC"
-	"cook-robot-middle-platform-go/httpServer/model"
+	"cook-robot-middle-platform-go/httpServer/modelV2"
 	"cook-robot-middle-platform-go/instruction"
 	"cook-robot-middle-platform-go/logger"
 	"encoding/json"
@@ -36,7 +36,7 @@ type CommandReq struct {
 func (c *Controller) Execute(ctx *gin.Context) {
 	var commandReq CommandReq
 	if err := ctx.BindJSON(&commandReq); err != nil {
-		model.NewFailResponse(ctx, err.Error())
+		modelV2.NewFailResponse(ctx, err.Error())
 		return
 	}
 	//logger.Log.Println(commandReq)
@@ -44,26 +44,20 @@ func (c *Controller) Execute(ctx *gin.Context) {
 	if commandReq.CommandType == command.COMMAND_TYPE_MULTIPLE {
 		// 多指令
 		if commandReq.CommandName == command.COMMAND_NAME_COOK {
-			var dbDish model.DBDish
-			err := db.SQLiteDB.First(&dbDish, "uuid = ?", commandReq.CommandData).Error
+			var dish modelV2.Dish
+			err := db.SQLiteDB.First(&dish, "uuid = ?", commandReq.CommandData).Error
 			if err != nil {
 				logger.Log.Println(err)
-				model.NewFailResponse(ctx, err.Error())
+				modelV2.NewFailResponse(ctx, err.Error())
 				return
 			}
 			//logger.Log.Println(dbDish)
-			var stepsJSON []map[string]interface{}
-			err = json.Unmarshal([]byte(dbDish.Steps), &stepsJSON)
-			if err != nil {
-				model.NewFailResponse(ctx, err.Error())
-				return
-			}
 
-			var dbSeasonings []model.DBSeasoning
+			var dbSeasonings []modelV2.Seasoning
 			err = db.SQLiteDB.Select("pump", "ratio").Find(&dbSeasonings).Error
 			if err != nil {
 				logger.Log.Println(err)
-				model.NewFailResponse(ctx, err.Error())
+				modelV2.NewFailResponse(ctx, err.Error())
 				return
 			}
 			pumpToRatioMap := map[string]uint32{}
@@ -76,7 +70,7 @@ func (c *Controller) Execute(ctx *gin.Context) {
 			// 开始先启动转动、油烟净化
 			instructions = append(instructions, instruction.NewInitInstruction("启动中"))
 
-			for _, step := range stepsJSON {
+			for _, step := range dish.Steps {
 				instructionType := instruction.InstructionType(step["instructionType"].(string))
 				var instructionStruct instruction.Instructioner
 				if instructionType == instruction.SEASONING {
@@ -216,15 +210,15 @@ func (c *Controller) Execute(ctx *gin.Context) {
 	}
 
 	if res.GetResult() == 0 {
-		model.NewFailResponse(ctx, "机器占用中")
+		modelV2.NewFailResponse(ctx, "机器占用中")
 		return
 	}
 
-	model.NewSuccessResponse(ctx, nil)
+	modelV2.NewSuccessResponse(ctx, nil)
 }
 
 func (c *Controller) FetchStatus(ctx *gin.Context) {
-	model.NewSuccessResponse(ctx, c.grpcClient.ControllerStatus)
+	modelV2.NewSuccessResponse(ctx, c.grpcClient.ControllerStatus)
 }
 
 func (c *Controller) Pause(ctx *gin.Context) {
@@ -236,7 +230,7 @@ func (c *Controller) Pause(ctx *gin.Context) {
 		logger.Log.Println("gRPC调用失败: %v", err)
 		return
 	}
-	model.NewSuccessResponse(ctx, res)
+	modelV2.NewSuccessResponse(ctx, res)
 }
 
 func (c *Controller) Resume(ctx *gin.Context) {
@@ -248,5 +242,5 @@ func (c *Controller) Resume(ctx *gin.Context) {
 		logger.Log.Println("gRPC调用失败: %v", err)
 		return
 	}
-	model.NewSuccessResponse(ctx, res)
+	modelV2.NewSuccessResponse(ctx, res)
 }

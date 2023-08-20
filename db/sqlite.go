@@ -2,7 +2,7 @@ package db
 
 import (
 	"cook-robot-middle-platform-go/logger"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 
