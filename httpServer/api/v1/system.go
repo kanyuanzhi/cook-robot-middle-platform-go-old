@@ -19,6 +19,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -49,6 +50,14 @@ func (s *System) Shutdown(ctx *gin.Context) {
 	defer cancel()
 	res, _ := s.grpcClient.Client.Shutdown(ctxGRPC, req)
 	logger.Log.Printf("controller关闭成功%d", res)
+	cmd := exec.Command("sudo", "reboot")
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		fmt.Println("Error:", err)
+	}
 	os.Exit(1)
 }
 
