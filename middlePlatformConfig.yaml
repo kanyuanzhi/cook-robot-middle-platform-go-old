@@ -1,25 +1,23 @@
 debugMode: true
 
-grpc:
-  targetHost: "localhost"
-  targetPort: 50051
-
 http:
-  host: "0.0.0.0"
+  host: 0.0.0.0
   port: 8889
   useSSL: false
+  sslDir: ssl
+  cerFile: certificate.crt
+  keyFile: private.key
 
-  sslDir: "ssl"
-  cerFile: "certificate.crt"
-  keyFile: "private.key"
+controller:
+  grpcHost: localhost
+  grpcPort: 50051
 
-softwareUpdate:
-  serverHost: "http://localhost"
-  #  serverHost: "http://124.71.146.83"
-  serverPort: 12306
-  filename: "software.zip"
-  savePath: "."
-  unzipPath: ".\\unzip"
-  uiFolderName: "cookRobot-linux-arm64"
-  middlePlatformFilename: "cook-robot-middle-platform-go"
-  controllerFilename: "cook-robot-controller-go"
+updater:
+  host: localhost
+  grpcPort: 12305
+  fileServerPort: 12306
+  savePath: .
+  unzipPath: .\\unzip
+  uiFolderName: cookRobot-linux-arm64
+  middlePlatformFilename: cook-robot-middle-platform-go
+  controllerFilename: cook-robot-controller-go

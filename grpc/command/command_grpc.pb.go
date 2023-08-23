@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v4.23.3
-// source: commandRPC.proto
+// source: command.proto
 
-package commandRPC
+package command
 
 import (
 	context "context"
@@ -39,7 +39,7 @@ func NewCommandServiceClient(cc grpc.ClientConnInterface) CommandServiceClient {
 
 func (c *commandServiceClient) Execute(ctx context.Context, in *CommandRequest, opts ...grpc.CallOption) (*CommandResponse, error) {
 	out := new(CommandResponse)
-	err := c.cc.Invoke(ctx, "/commandRPC.CommandService/Execute", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/command.CommandService/Execute", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (c *commandServiceClient) Execute(ctx context.Context, in *CommandRequest, 
 
 func (c *commandServiceClient) FetchStatus(ctx context.Context, in *FetchRequest, opts ...grpc.CallOption) (*FetchResponse, error) {
 	out := new(FetchResponse)
-	err := c.cc.Invoke(ctx, "/commandRPC.CommandService/FetchStatus", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/command.CommandService/FetchStatus", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *commandServiceClient) FetchStatus(ctx context.Context, in *FetchRequest
 
 func (c *commandServiceClient) Pause(ctx context.Context, in *PauseAndResumeRequest, opts ...grpc.CallOption) (*PauseAndResumeResponse, error) {
 	out := new(PauseAndResumeResponse)
-	err := c.cc.Invoke(ctx, "/commandRPC.CommandService/Pause", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/command.CommandService/Pause", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (c *commandServiceClient) Pause(ctx context.Context, in *PauseAndResumeRequ
 
 func (c *commandServiceClient) Resume(ctx context.Context, in *PauseAndResumeRequest, opts ...grpc.CallOption) (*PauseAndResumeResponse, error) {
 	out := new(PauseAndResumeResponse)
-	err := c.cc.Invoke(ctx, "/commandRPC.CommandService/Resume", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/command.CommandService/Resume", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (c *commandServiceClient) Resume(ctx context.Context, in *PauseAndResumeReq
 
 func (c *commandServiceClient) Shutdown(ctx context.Context, in *ShutdownRequest, opts ...grpc.CallOption) (*ShutdownResponse, error) {
 	out := new(ShutdownResponse)
-	err := c.cc.Invoke(ctx, "/commandRPC.CommandService/Shutdown", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/command.CommandService/Shutdown", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func _CommandService_Execute_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/commandRPC.CommandService/Execute",
+		FullMethod: "/command.CommandService/Execute",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CommandServiceServer).Execute(ctx, req.(*CommandRequest))
@@ -154,7 +154,7 @@ func _CommandService_FetchStatus_Handler(srv interface{}, ctx context.Context, d
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/commandRPC.CommandService/FetchStatus",
+		FullMethod: "/command.CommandService/FetchStatus",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CommandServiceServer).FetchStatus(ctx, req.(*FetchRequest))
@@ -172,7 +172,7 @@ func _CommandService_Pause_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/commandRPC.CommandService/Pause",
+		FullMethod: "/command.CommandService/Pause",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CommandServiceServer).Pause(ctx, req.(*PauseAndResumeRequest))
@@ -190,7 +190,7 @@ func _CommandService_Resume_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/commandRPC.CommandService/Resume",
+		FullMethod: "/command.CommandService/Resume",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CommandServiceServer).Resume(ctx, req.(*PauseAndResumeRequest))
@@ -208,7 +208,7 @@ func _CommandService_Shutdown_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/commandRPC.CommandService/Shutdown",
+		FullMethod: "/command.CommandService/Shutdown",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CommandServiceServer).Shutdown(ctx, req.(*ShutdownRequest))
@@ -220,7 +220,7 @@ func _CommandService_Shutdown_Handler(srv interface{}, ctx context.Context, dec 
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CommandService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "commandRPC.CommandService",
+	ServiceName: "command.CommandService",
 	HandlerType: (*CommandServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -245,5 +245,5 @@ var CommandService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "commandRPC.proto",
+	Metadata: "command.proto",
 }

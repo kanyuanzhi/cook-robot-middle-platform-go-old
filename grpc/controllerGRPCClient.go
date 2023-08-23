@@ -2,7 +2,7 @@ package grpc
 
 import (
 	"context"
-	pb "cook-robot-middle-platform-go/grpc/commandRPC" // 替换为你的实际包路径
+	pb "cook-robot-middle-platform-go/grpc/command" // 替换为你的实际包路径
 	"cook-robot-middle-platform-go/logger"
 	"encoding/json"
 	"fmt"
@@ -41,49 +41,50 @@ type ControllerStatus struct {
 	CurrentHeatingTemperature       uint32           `json:"currentHeatingTemperature"`
 }
 
-type GRPCClient struct {
-	targetHost string
-	targetPort uint16
+type ControllerGRPCClient struct {
+	host string
+	port uint16
 
 	Client pb.CommandServiceClient
 
 	ControllerStatus ControllerStatus
 }
 
-func NewGRPCClient(targetHost string, targetPort uint16) *GRPCClient {
-	return &GRPCClient{
-		targetHost: targetHost,
-		targetPort: targetPort,
+func NewControllerGRPCClient(host string, port uint16) *ControllerGRPCClient {
+	return &ControllerGRPCClient{
+		host: host,
+		port: port,
 	}
 }
 
-func (g *GRPCClient) Run() {
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", g.targetHost, g.targetPort),
+func (c *ControllerGRPCClient) Run() {
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", c.host, c.port),
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.Log.Println(err)
 		return
 	}
 	//defer conn.Close()
-	g.Client = pb.NewCommandServiceClient(conn)
+	c.Client = pb.NewCommandServiceClient(conn)
+	logger.Log.Printf("controllerGRPC客户端启动，目标地址：%s，端口：%d", c.host, c.port)
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ticker.C:
-			go g.FetchStatus()
+			go c.FetchStatus()
 		}
 	}
 }
 
-func (g *GRPCClient) FetchStatus() {
+func (c *ControllerGRPCClient) FetchStatus() {
 	req := &pb.FetchRequest{
 		Empty: true,
 	}
 	ctxGRPC, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	res, err := g.Client.FetchStatus(ctxGRPC, req)
+	res, err := c.Client.FetchStatus(ctxGRPC, req)
 	if err != nil {
 		//logger.Log.Printf("gRPC调用失败: %v", err)
 		return
@@ -95,6 +96,6 @@ func (g *GRPCClient) FetchStatus() {
 		logger.Log.Printf("无法解析命令JSON：%v", err)
 		return
 	}
-	g.ControllerStatus = controllerStatus
+	c.ControllerStatus = controllerStatus
 	//logger.Log.Println(controllerStatus)
 }

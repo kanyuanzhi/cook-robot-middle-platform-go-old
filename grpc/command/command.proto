@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-option go_package = "/commandRPC";
+option go_package = "/command";
 
-package commandRPC;
+package command;
 
 service CommandService {
   rpc Execute(CommandRequest) returns (CommandResponse) {}

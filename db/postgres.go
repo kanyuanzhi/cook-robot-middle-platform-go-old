@@ -30,5 +30,6 @@ func init() {
 	sqlDB.SetMaxIdleConns(5)  // 最大闲置连接数
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
+	logger.Log.Println("连接postgres数据库成功")
 	Postgres = db
 }

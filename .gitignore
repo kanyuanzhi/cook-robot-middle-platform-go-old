@@ -11,3 +11,5 @@ go.sum
 
 *.zip
 unzip
+
+*.log

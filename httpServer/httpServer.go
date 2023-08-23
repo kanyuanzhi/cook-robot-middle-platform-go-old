@@ -16,11 +16,13 @@ type HTTPServer struct {
 	host string
 	port uint16
 
-	router     *gin.Engine
-	grpcClient *grpc.GRPCClient
+	router               *gin.Engine
+	controllerGRPCClient *grpc.ControllerGRPCClient
+	updaterGRPCClient    *grpc.UpdaterGRPCClient
 }
 
-func NewHTTPServer(host string, port uint16, grpcClient *grpc.GRPCClient) *HTTPServer {
+func NewHTTPServer(host string, port uint16,
+	controllerGRPCClient *grpc.ControllerGRPCClient, updaterGRPCClient *grpc.UpdaterGRPCClient) *HTTPServer {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
@@ -30,10 +32,11 @@ func NewHTTPServer(host string, port uint16, grpcClient *grpc.GRPCClient) *HTTPS
 	router.Use(gin.LoggerWithWriter(gin.DefaultWriter, "/api/v1/controller/fetchStatus"))
 
 	return &HTTPServer{
-		host:       host,
-		port:       port,
-		router:     router,
-		grpcClient: grpcClient,
+		host:                 host,
+		port:                 port,
+		router:               router,
+		controllerGRPCClient: controllerGRPCClient,
+		updaterGRPCClient:    updaterGRPCClient,
 	}
 }
 
@@ -44,9 +47,9 @@ func (h *HTTPServer) Run() {
 	cuisine := v1.NewCuisine()
 	seasoning := v1.NewSeasoning()
 
-	controller := v1.NewController(h.grpcClient)
+	controller := v1.NewController(h.controllerGRPCClient)
 
-	system := v1.NewSystem(h.grpcClient)
+	system := v1.NewSystem(h.controllerGRPCClient, h.updaterGRPCClient)
 
 	apiV1 := h.router.Group("/api/v1")
 	{
@@ -72,10 +75,12 @@ func (h *HTTPServer) Run() {
 		apiV1.GET("/controller/pause", controller.Pause)
 		apiV1.GET("/controller/resume", controller.Resume)
 
-		apiV1.GET("/system/getQrCode", system.GetQrCode)
+		apiV1.GET("/system/qrCode", system.GetQrCode)
 		apiV1.GET("/system/shutdown", system.Shutdown)
 		apiV1.GET("/system/checkUpdatePermission", system.CheckUpdatePermission)
 		apiV1.GET("/system/update", system.Update)
+		apiV1.GET("/system/softwareInfo", system.GetSoftwareInfo)
+		apiV1.GET("/system/checkUpdateInfo", system.CheckUpdateInfo)
 	}
 
 	var err error

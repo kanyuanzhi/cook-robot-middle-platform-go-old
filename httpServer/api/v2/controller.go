@@ -5,7 +5,7 @@ import (
 	"cook-robot-middle-platform-go/command"
 	"cook-robot-middle-platform-go/db"
 	"cook-robot-middle-platform-go/grpc"
-	pb "cook-robot-middle-platform-go/grpc/commandRPC"
+	pb "cook-robot-middle-platform-go/grpc/command"
 	"cook-robot-middle-platform-go/httpServer/modelV2"
 	"cook-robot-middle-platform-go/instruction"
 	"cook-robot-middle-platform-go/logger"
@@ -18,10 +18,10 @@ import (
 )
 
 type Controller struct {
-	grpcClient *grpc.GRPCClient
+	grpcClient *grpc.ControllerGRPCClient
 }
 
-func NewController(grpcClient *grpc.GRPCClient) *Controller {
+func NewController(grpcClient *grpc.ControllerGRPCClient) *Controller {
 	return &Controller{
 		grpcClient: grpcClient,
 	}

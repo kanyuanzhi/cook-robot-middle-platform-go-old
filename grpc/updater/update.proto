@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+option go_package = "/v1";
+
+package v1;
+
+service Update {
+  rpc Check(CheckRequest) returns (CheckResponse) {}
+}
+
+message CheckRequest {
+  string version = 1;
+  string machineModel = 2;
+}
+
+message CheckResponse {
+  bool isLatest = 1; //是否为最新版
+  string latestVersion = 2; //最新版的版本号
+  bool hasFile = 3;  //是否有可供更新的压缩包
+  string filePath = 4; //压缩包名称
+}
+
+//protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative commandRPC.proto

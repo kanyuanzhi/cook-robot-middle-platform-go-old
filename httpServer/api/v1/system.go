@@ -6,14 +6,16 @@ import (
 	"context"
 	"cook-robot-middle-platform-go/config"
 	"cook-robot-middle-platform-go/grpc"
-	pb "cook-robot-middle-platform-go/grpc/commandRPC"
+	pb "cook-robot-middle-platform-go/grpc/command"
 	"cook-robot-middle-platform-go/httpServer/model"
+	"cook-robot-middle-platform-go/info"
 	"cook-robot-middle-platform-go/logger"
 	"encoding/base64"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/skip2/go-qrcode"
+	"gopkg.in/yaml.v3"
 	"image/png"
 	"io"
 	"net"
@@ -23,22 +25,25 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
 type System struct {
-	grpcClient *grpc.GRPCClient
+	controllerGRPCClient *grpc.ControllerGRPCClient
+	updaterGRPCClient    *grpc.UpdaterGRPCClient
 
-	ws            *websocket.Conn
-	isUpdating    bool // 是否正在更新软件
-	updatingMutex sync.Mutex
+	ws             *websocket.Conn
+	isUpdating     bool   // 是否正在更新软件
+	updateFilePath string // 更新文件路径
+	latestVersion  string // 最新的版本号
 }
 
-func NewSystem(grpcClient *grpc.GRPCClient) *System {
+func NewSystem(controllerGRPCClient *grpc.ControllerGRPCClient, updaterGRPCClient *grpc.UpdaterGRPCClient) *System {
 	return &System{
-		grpcClient: grpcClient,
-		isUpdating: false,
+		controllerGRPCClient: controllerGRPCClient,
+		updaterGRPCClient:    updaterGRPCClient,
+		isUpdating:           false,
+		updateFilePath:       "",
 	}
 }
 
@@ -48,7 +53,7 @@ func (s *System) Shutdown(ctx *gin.Context) {
 	}
 	ctxGRPC, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	res, _ := s.grpcClient.Client.Shutdown(ctxGRPC, req)
+	res, _ := s.controllerGRPCClient.Client.Shutdown(ctxGRPC, req)
 	logger.Log.Printf("controller关闭成功%d", res)
 	cmd := exec.Command("sudo", "reboot")
 
@@ -108,17 +113,17 @@ func (s *System) GetQrCode(ctx *gin.Context) {
 
 func (s *System) CheckUpdatePermission(ctx *gin.Context) {
 	// 检查控制器是否处在运行状态，运行状态下不允许更新
-	if s.grpcClient.ControllerStatus.IsRunning || s.isUpdating {
+	if s.controllerGRPCClient.ControllerStatus.IsRunning || s.isUpdating {
 		model.NewSuccessResponse(ctx, gin.H{
-			"isRunning":       s.grpcClient.ControllerStatus.IsRunning,
-			"isUpdating":      s.isUpdating,
-			"updatePermitted": false,
+			"isRunning":   s.controllerGRPCClient.ControllerStatus.IsRunning,
+			"isUpdating":  s.isUpdating,
+			"isPermitted": false,
 		})
 	} else {
 		model.NewSuccessResponse(ctx, gin.H{
-			"isRunning":       s.grpcClient.ControllerStatus.IsRunning,
-			"isUpdating":      s.isUpdating,
-			"updatePermitted": true,
+			"isRunning":   s.controllerGRPCClient.ControllerStatus.IsRunning,
+			"isUpdating":  s.isUpdating,
+			"isPermitted": true,
 		})
 	}
 }
@@ -152,18 +157,25 @@ func (s *System) Update(ctx *gin.Context) {
 		logger.Log.Println("断开WebSocket连接")
 	}()
 
-	fileURL := fmt.Sprintf("%s:%d/%s", config.App.SoftwareUpdate.ServerHost, config.App.SoftwareUpdate.ServerPort,
-		config.App.SoftwareUpdate.Filename)
+	fileURL := fmt.Sprintf("http://%s:%d/%s", config.App.Updater.Host, config.App.Updater.FileServerPort,
+		strings.Replace(s.updateFilePath, "\\", "/", -1))
+	fmt.Println(fileURL)
 	err = s.downloadAndSaveFile(fileURL)
 	if err != nil {
 		logger.Log.Printf("downloadAndSaveFile error:%s", err.Error())
 		return
 	}
 
-	zipFile := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.Filename)
+	zipFile := filepath.Join(config.App.Updater.SavePath, filepath.Base(s.updateFilePath))
 	err = s.unzipFile(zipFile)
 	if err != nil {
 		logger.Log.Printf("unzipFile error:%s", err.Error())
+		return
+	}
+
+	err = s.updateSoftwareInfo()
+	if err != nil {
+		logger.Log.Printf("updateSoftware error:%s", err.Error())
 		return
 	}
 }
@@ -187,7 +199,7 @@ func (s *System) downloadAndSaveFile(fileURL string) error {
 	}
 
 	// 创建本地文件
-	file, err := os.Create(filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.Filename))
+	file, err := os.Create(filepath.Join(config.App.Updater.SavePath, filepath.Base(s.updateFilePath)))
 	if err != nil {
 		return err
 	}
@@ -242,7 +254,6 @@ func (s *System) downloadAndSaveFile(fileURL string) error {
 }
 
 func (s *System) unzipFile(zipFile string) error {
-
 	// 打开ZIP文件
 	r, err := zip.OpenReader(zipFile)
 	if err != nil {
@@ -251,7 +262,7 @@ func (s *System) unzipFile(zipFile string) error {
 	defer r.Close()
 
 	// 创建目标文件夹
-	if err := os.MkdirAll(config.App.SoftwareUpdate.UnzipPath, 0755); err != nil {
+	if err := os.MkdirAll(config.App.Updater.UnzipPath, 0755); err != nil {
 		return err
 	}
 
@@ -263,13 +274,13 @@ func (s *System) unzipFile(zipFile string) error {
 	// 遍历ZIP文件中的每个文件
 	for _, file := range r.File {
 		// 构建解压后的文件路径
-		extractedFilePath := filepath.Join(config.App.SoftwareUpdate.UnzipPath, file.Name)
+		extractedFilePath := filepath.Join(config.App.Updater.UnzipPath, file.Name)
 		// 如果文件是文件夹，创建对应的文件夹
 		if file.FileInfo().IsDir() {
 			// 如果压缩包中含有electron ui的打包文件夹，则先删除后再解压
-			if strings.Contains(file.Name, config.App.SoftwareUpdate.UIFolderName) && !removeUIFolderFlag {
+			if strings.Contains(file.Name, config.App.Updater.UIFolderName) && !removeUIFolderFlag {
 				removeUIFolderFlag = true
-				uiFolderPath := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.UIFolderName)
+				uiFolderPath := filepath.Join(config.App.Updater.SavePath, config.App.Updater.UIFolderName)
 				logger.Log.Printf("发现%s文件夹，删除\n", uiFolderPath)
 				err = os.RemoveAll(uiFolderPath)
 				if err != nil {
@@ -281,8 +292,8 @@ func (s *System) unzipFile(zipFile string) error {
 				return err
 			}
 		} else {
-			if strings.Contains(file.Name, config.App.SoftwareUpdate.MiddlePlatformFilename) {
-				middlePlatformFilePath := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.MiddlePlatformFilename)
+			if strings.Contains(file.Name, config.App.Updater.MiddlePlatformFilename) {
+				middlePlatformFilePath := filepath.Join(config.App.Updater.SavePath, config.App.Updater.MiddlePlatformFilename)
 				logger.Log.Printf("发现%s文件，删除\n", middlePlatformFilePath)
 				err = os.RemoveAll(middlePlatformFilePath)
 				if err != nil {
@@ -290,8 +301,8 @@ func (s *System) unzipFile(zipFile string) error {
 				}
 			}
 
-			if strings.Contains(file.Name, config.App.SoftwareUpdate.ControllerFilename) {
-				controllerFilePath := filepath.Join(config.App.SoftwareUpdate.SavePath, config.App.SoftwareUpdate.ControllerFilename)
+			if strings.Contains(file.Name, config.App.Updater.ControllerFilename) {
+				controllerFilePath := filepath.Join(config.App.Updater.SavePath, config.App.Updater.ControllerFilename)
 				logger.Log.Printf("发现%s文件，删除\n", controllerFilePath)
 				err = os.RemoveAll(controllerFilePath)
 				if err != nil {
@@ -356,4 +367,61 @@ func (s *System) sendUpdateData(isDownloadFinished bool, isUnzipFinished bool,
 		logger.Log.Printf("error:%s", err.Error())
 	}
 	return err
+}
+
+func (s *System) updateSoftwareInfo() error {
+	// 读取配置文件
+	configFilePath := "softwareInfo.yaml"
+	data, err := os.ReadFile(configFilePath)
+	if err != nil {
+		logger.Log.Fatalf("无法读取配置文件：%v", err)
+		return err
+	}
+
+	err = yaml.Unmarshal(data, info.Software)
+	if err != nil {
+		logger.Log.Fatalf("无法解析配置文件：%v", err)
+		return err
+	}
+
+	// 修改字段值
+	info.Software.Version = s.latestVersion
+	info.Software.UpdateTime = time.Now().Local()
+
+	// 将修改后的结构体重新写回配置文件
+	newData, err := yaml.Marshal(info.Software)
+	if err != nil {
+		logger.Log.Fatalf("无法序列化配置：%v", err)
+		return err
+	}
+
+	err = os.WriteFile(configFilePath, newData, os.ModePerm)
+	if err != nil {
+		logger.Log.Fatalf("无法写回配置文件：%v", err)
+		return err
+	}
+
+	logger.Log.Println("字段值已修改并写回配置文件")
+	info.Software.Reload()
+	return nil
+}
+
+func (s *System) GetSoftwareInfo(ctx *gin.Context) {
+	model.NewSuccessResponse(ctx, info.Software)
+}
+
+func (s *System) CheckUpdateInfo(ctx *gin.Context) {
+	res, err := s.updaterGRPCClient.Check()
+	if err != nil {
+		model.NewFailResponse(ctx, nil)
+		return
+	}
+	s.latestVersion = res.GetLatestVersion()
+	s.updateFilePath = res.GetFilePath()
+	fmt.Println(s.updateFilePath)
+	model.NewSuccessResponse(ctx, gin.H{
+		"isLatest":      res.GetIsLatest(),
+		"latestVersion": res.GetLatestVersion(),
+		"hasFile":       res.GetHasFile(),
+	})
 }
