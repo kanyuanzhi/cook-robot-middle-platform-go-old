@@ -33,9 +33,9 @@ type System struct {
 	updaterGRPCClient    *grpc.UpdaterGRPCClient
 
 	ws             *websocket.Conn
-	isUpdating     bool   // 是否正在更新软件
-	updateFilePath string // 更新文件路径
-	latestVersion  string // 最新的版本号
+	isUpdating     bool     // 是否正在更新软件
+	updateFilePath []string // 更新文件路径
+	latestVersion  string   // 最新的版本号
 }
 
 func NewSystem(controllerGRPCClient *grpc.ControllerGRPCClient, updaterGRPCClient *grpc.UpdaterGRPCClient) *System {
@@ -43,7 +43,7 @@ func NewSystem(controllerGRPCClient *grpc.ControllerGRPCClient, updaterGRPCClien
 		controllerGRPCClient: controllerGRPCClient,
 		updaterGRPCClient:    updaterGRPCClient,
 		isUpdating:           false,
-		updateFilePath:       "",
+		updateFilePath:       []string{},
 	}
 }
 
@@ -158,7 +158,7 @@ func (s *System) Update(ctx *gin.Context) {
 	}()
 
 	fileURL := fmt.Sprintf("http://%s:%d/%s", config.App.Updater.Host, config.App.Updater.FileServerPort,
-		strings.Replace(s.updateFilePath, "\\", "/", -1))
+		strings.Join(s.updateFilePath, "/"))
 	fmt.Println(fileURL)
 	err = s.downloadAndSaveFile(fileURL)
 	if err != nil {
@@ -166,7 +166,7 @@ func (s *System) Update(ctx *gin.Context) {
 		return
 	}
 
-	zipFile := filepath.Join(config.App.Updater.SavePath, filepath.Base(s.updateFilePath))
+	zipFile := filepath.Join(config.App.Updater.SavePath, s.updateFilePath[len(s.updateFilePath)-1])
 	err = s.unzipFile(zipFile)
 	if err != nil {
 		logger.Log.Printf("unzipFile error:%s", err.Error())
@@ -199,7 +199,7 @@ func (s *System) downloadAndSaveFile(fileURL string) error {
 	}
 
 	// 创建本地文件
-	file, err := os.Create(filepath.Join(config.App.Updater.SavePath, filepath.Base(s.updateFilePath)))
+	file, err := os.Create(filepath.Join(config.App.Updater.SavePath, s.updateFilePath[len(s.updateFilePath)-1]))
 	if err != nil {
 		return err
 	}
@@ -277,7 +277,12 @@ func (s *System) unzipFile(zipFile string) error {
 		extractedFilePath := filepath.Join(config.App.Updater.UnzipPath, file.Name)
 		// 如果文件是文件夹，创建对应的文件夹
 		if file.FileInfo().IsDir() {
-			// 如果压缩包中含有electron ui的打包文件夹，则先删除后再解压
+			//err = os.MkdirAll(extractedFilePath, file.Mode())
+			err = os.MkdirAll(extractedFilePath, os.ModePerm)
+			if err != nil {
+				return err
+			}
+		} else {
 			if strings.Contains(file.Name, config.App.Updater.UIFolderName) && !removeUIFolderFlag {
 				removeUIFolderFlag = true
 				uiFolderPath := filepath.Join(config.App.Updater.SavePath, config.App.Updater.UIFolderName)
@@ -287,11 +292,7 @@ func (s *System) unzipFile(zipFile string) error {
 					return err
 				}
 			}
-			err = os.MkdirAll(extractedFilePath, file.Mode())
-			if err != nil {
-				return err
-			}
-		} else {
+
 			if strings.Contains(file.Name, config.App.Updater.MiddlePlatformFilename) {
 				middlePlatformFilePath := filepath.Join(config.App.Updater.SavePath, config.App.Updater.MiddlePlatformFilename)
 				logger.Log.Printf("发现%s文件，删除\n", middlePlatformFilePath)
@@ -310,8 +311,8 @@ func (s *System) unzipFile(zipFile string) error {
 				}
 			}
 
-			// 否则，创建上层文件夹并解压文件
-			if err = os.MkdirAll(filepath.Dir(extractedFilePath), 0755); err != nil {
+			// 创建上层文件夹并解压文件
+			if err = os.MkdirAll(filepath.Dir(extractedFilePath), os.ModePerm); err != nil {
 				return err
 			}
 			// 打开ZIP文件中的文件
@@ -413,14 +414,15 @@ func (s *System) GetSoftwareInfo(ctx *gin.Context) {
 func (s *System) CheckUpdateInfo(ctx *gin.Context) {
 	res, err := s.updaterGRPCClient.Check()
 	if err != nil {
-		model.NewFailResponse(ctx, nil)
+		model.NewFailResponse(ctx, err)
 		return
 	}
 	s.latestVersion = res.GetLatestVersion()
 	s.updateFilePath = res.GetFilePath()
 	fmt.Println(s.updateFilePath)
 	model.NewSuccessResponse(ctx, gin.H{
-		"isLatest":      res.GetIsLatest(),
+		//"isLatest":      res.GetIsLatest(),
+		"isLatest":      false,
 		"latestVersion": res.GetLatestVersion(),
 		"hasFile":       res.GetHasFile(),
 	})

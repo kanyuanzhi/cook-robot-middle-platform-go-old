@@ -13,11 +13,11 @@ controller:
   grpcPort: 50051
 
 updater:
-  host: localhost
+  host: 192.168.6.10
   grpcPort: 12305
   fileServerPort: 12306
   savePath: .
-  unzipPath: .\\unzip
+  unzipPath: .
   uiFolderName: cookRobot-linux-arm64
   middlePlatformFilename: cook-robot-middle-platform-go
   controllerFilename: cook-robot-controller-go
