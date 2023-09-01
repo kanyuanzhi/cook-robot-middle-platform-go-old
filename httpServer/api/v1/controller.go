@@ -151,6 +151,14 @@ func (c *Controller) Execute(ctx *gin.Context) {
 				CommandType:  command.COMMAND_TYPE_MULTIPLE,
 				Instructions: instructions,
 			}
+		} else if commandReq.CommandName == command.COMMAND_NAME_WITHDRAW {
+			var instructions []instruction.Instructioner
+			instructions = append(instructions, instruction.NewWithdrawInstruction())
+			commandStruct = command.Command{
+				CommandName:  command.COMMAND_NAME_WITHDRAW,
+				CommandType:  command.COMMAND_TYPE_MULTIPLE,
+				Instructions: instructions,
+			}
 		} else {
 			logger.Log.Printf("%s指令错误", commandReq.CommandName)
 			return

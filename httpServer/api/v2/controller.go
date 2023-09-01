@@ -67,7 +67,7 @@ func (c *Controller) Execute(ctx *gin.Context) {
 			fmt.Println(pumpToRatioMap)
 
 			var instructions []instruction.Instructioner
-			// 开始先启动转动、油烟净化
+			// 开始炒菜前的初始动作
 			instructions = append(instructions, instruction.NewInitInstruction("启动中"))
 
 			for _, step := range dish.Steps {
@@ -186,6 +186,14 @@ func (c *Controller) Execute(ctx *gin.Context) {
 			commandStruct = command.Command{
 				CommandName:  command.COMMAND_NAME_HEAT,
 				CommandType:  command.COMMAND_TYPE_SINGLE,
+				Instructions: instructions,
+			}
+		} else if commandReq.CommandName == command.COMMAND_NAME_WITHDRAW {
+			var instructions []instruction.Instructioner
+			instructions = append(instructions, instruction.NewWithdrawInstruction())
+			commandStruct = command.Command{
+				CommandName:  command.COMMAND_NAME_WITHDRAW,
+				CommandType:  command.COMMAND_TYPE_MULTIPLE,
 				Instructions: instructions,
 			}
 		} else {
